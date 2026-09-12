@@ -25,10 +25,25 @@ export function getConnectionState(instanceName: string) {
   return request<{ instance?: { state?: string }; state?: string }>(`/instance/connectionState/${encodeURIComponent(instanceName)}`);
 }
 
+export function createInstance(instanceName: string) {
+  return request<{ instance?: { token?: string; instanceName?: string }; hash?: string; token?: string }>("/instance/create", {
+    method: "POST",
+    body: JSON.stringify({ instanceName, integration: "WHATSAPP-BAILEYS", qrcode: true }),
+  });
+}
+
+export function connectInstance(instanceName: string) {
+  return request<{ base64?: string; code?: string; qrcode?: { base64?: string; code?: string } }>(`/instance/connect/${encodeURIComponent(instanceName)}`);
+}
+
+export function deleteInstance(instanceName: string) {
+  return request(`/instance/delete/${encodeURIComponent(instanceName)}`, { method: "DELETE" });
+}
+
 export function sendText(instanceName: string, number: string, text: string) {
   return request(`/message/sendText/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ number, text }) });
 }
 
-export function configureWebhook(instanceName: string, url: string) {
-  return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ webhook: { enabled: true, url, byEvents: false, base64: false, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] } }) });
+export function configureWebhook(instanceName: string, url: string, webhookSecret: string) {
+  return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ webhook: { enabled: true, url, byEvents: false, base64: false, headers: { "X-M7-Evolution-Token": webhookSecret }, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] } }) });
 }

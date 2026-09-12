@@ -31,6 +31,15 @@ export async function POST(request: Request) {
         "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, 'owner')",
         [tenantId, name, email, passwordHash],
       );
+      const [board] = await connection.execute<any>(
+        "INSERT INTO boards (tenant_id, name, description) VALUES (?, 'Funil de vendas', 'Quadro inicial do CRM')",
+        [tenantId],
+      );
+      const boardId = Number(board.insertId);
+      await connection.query(
+        "INSERT INTO board_stages (board_id, name, position) VALUES (?, 'Novo', 0), (?, 'Em atendimento', 1), (?, 'Ganho', 2), (?, 'Perdido', 3)",
+        [boardId, boardId, boardId, boardId],
+      );
       return { tenantId, userId: Number(user.insertId) };
     });
     const token = await createSession(result.userId, result.tenantId);

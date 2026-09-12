@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
 import { db, withTransaction, type DbRow } from "@/lib/db";
 import { decryptSecret } from "@/lib/crypto";
 import { leadPayloadSchema, normalizePhone } from "@/lib/leads/schema";
@@ -46,6 +45,8 @@ export async function POST(request: Request, context: RouteContext) {
 
   const idempotencyKey = request.headers.get("idempotency-key")?.trim();
   if (!idempotencyKey || idempotencyKey.length > 191) return error("Idempotency-Key obrigatório.", 422);
+  const nonce = request.headers.get("x-m7-nonce")?.trim();
+  if (!nonce || nonce.length > 191) return error("Nonce obrigatório.", 422);
   let jsonBody: unknown;
   try {
     jsonBody = JSON.parse(rawBody);
@@ -61,10 +62,14 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const result = await withTransaction(async (connection) => {
       const [existingRows] = await connection.execute<DbRow[]>(
-        "SELECT id FROM lead_webhook_events WHERE endpoint_id = ? AND idempotency_key = ? FOR UPDATE",
-        [Number(endpoint.id), idempotencyKey],
+        "SELECT id, idempotency_key, nonce FROM lead_webhook_events WHERE endpoint_id = ? AND (idempotency_key = ? OR nonce = ?) FOR UPDATE",
+        [Number(endpoint.id), idempotencyKey, nonce],
       );
-      if (existingRows[0]) return { duplicate: true };
+      const existing = existingRows[0];
+      if (existing) {
+        if (String(existing.idempotency_key) === idempotencyKey) return { duplicate: true, replayConflict: false };
+        return { duplicate: false, replayConflict: true };
+      }
 
       const [contacts] = await connection.execute<DbRow[]>(
         `SELECT id FROM contacts WHERE tenant_id = ? AND (phone = ? OR (? IS NOT NULL AND external_id = ?))
@@ -94,13 +99,14 @@ export async function POST(request: Request, context: RouteContext) {
       }
 
       await connection.execute(
-        `INSERT INTO lead_webhook_events (endpoint_id, tenant_id, idempotency_key, external_id, payload, status)
-         VALUES (?, ?, ?, ?, ?, 'accepted')`,
-        [Number(endpoint.id), Number(endpoint.tenant_id), idempotencyKey, payload.external_id ?? null, JSON.stringify({ ...payload, phone })],
+        `INSERT INTO lead_webhook_events (endpoint_id, tenant_id, idempotency_key, nonce, external_id, payload, status)
+         VALUES (?, ?, ?, ?, ?, ?, 'accepted')`,
+        [Number(endpoint.id), Number(endpoint.tenant_id), idempotencyKey, nonce, payload.external_id ?? null, JSON.stringify({ ...payload, phone })],
       );
-      return { duplicate: false, contactId, eventId: randomUUID() };
+      return { duplicate: false, replayConflict: false, contactId };
     });
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
+    if (result.replayConflict) return error("Nonce já utilizado.", 409);
     return NextResponse.json({ ok: true, contact_id: result.contactId }, { status: 202 });
   } catch {
     return error("Não foi possível processar o lead.", 500);

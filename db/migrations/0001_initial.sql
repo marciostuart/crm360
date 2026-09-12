@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
-  UNIQUE KEY uq_users_tenant_email (tenant_id, email),
+  UNIQUE KEY uq_users_email (email),
   CONSTRAINT fk_users_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -79,12 +79,14 @@ CREATE TABLE IF NOT EXISTS lead_webhook_events (
   endpoint_id BIGINT UNSIGNED NOT NULL,
   tenant_id BIGINT UNSIGNED NOT NULL,
   idempotency_key VARCHAR(191) NOT NULL,
+  nonce VARCHAR(191) NOT NULL,
   external_id VARCHAR(191) NULL,
   payload JSON NOT NULL,
   status ENUM('accepted', 'rejected', 'failed') NOT NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   UNIQUE KEY uq_lead_event_idempotency (endpoint_id, idempotency_key),
+  UNIQUE KEY uq_lead_event_nonce (endpoint_id, nonce),
   CONSTRAINT fk_lead_events_endpoint FOREIGN KEY (endpoint_id) REFERENCES lead_webhook_endpoints(id) ON DELETE CASCADE,
   CONSTRAINT fk_lead_events_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -92,13 +94,16 @@ CREATE TABLE IF NOT EXISTS lead_webhook_events (
 CREATE TABLE IF NOT EXISTS evolution_connections (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   tenant_id BIGINT UNSIGNED NOT NULL,
+  public_id CHAR(36) NOT NULL,
   name VARCHAR(120) NOT NULL,
   instance_name VARCHAR(120) NOT NULL,
   instance_token_ciphertext TEXT NOT NULL,
+  webhook_secret_ciphertext TEXT NOT NULL,
   status VARCHAR(40) NOT NULL DEFAULT 'disconnected',
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
+  UNIQUE KEY uq_evolution_public_id (public_id),
   UNIQUE KEY uq_evolution_tenant_instance (tenant_id, instance_name),
   CONSTRAINT fk_evolution_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -155,6 +160,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
+  UNIQUE KEY uq_conversations_contact_connection (tenant_id, contact_id, evolution_connection_id),
   CONSTRAINT fk_conversations_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
   CONSTRAINT fk_conversations_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE CASCADE,
   CONSTRAINT fk_conversations_connection FOREIGN KEY (evolution_connection_id) REFERENCES evolution_connections(id) ON DELETE SET NULL

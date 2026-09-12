@@ -44,3 +44,11 @@ HMAC_SHA256(secret, timestamp + "." + nonce + "." + raw_body)
 ```
 
 Envie a assinatura no formato `sha256=<hexadecimal>` no header `X-M7-Signature`.
+
+## Webhook da Evolution
+
+Cada conexão recebe um identificador público aleatório e um segredo independente. O segredo é enviado à Evolution somente como header customizado `X-M7-Evolution-Token`; nunca é colocado na URL, HTML ou resposta do CRM. O endpoint aceita somente eventos autenticados de mensagens e atualizações de conexão.
+
+## Escopo desta fase
+
+O Web App não executa agentes de IA, campanhas ou disparos em massa. O envio disponível é somente individual dentro de uma conversa autenticada.
