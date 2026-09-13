@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, withTransaction, type DbRow } from "@/lib/db";
 import { decryptSecret } from "@/lib/crypto";
-import { isValidNormalizedPhone, leadPayloadSchema, normalizePhone } from "@/lib/leads/schema";
+import { isValidNormalizedPhone, leadPayloadSchema, normalizePhone, phoneLookupCandidates } from "@/lib/leads/schema";
 import { verifyLeadSignature } from "@/lib/webhooks/hmac";
 import { mapIncomingLead, parseLeadMapping } from "@/lib/leads/mapping";
 import { isAllowedSourceHost } from "@/lib/webhooks/source-host";
@@ -129,6 +129,7 @@ export async function POST(request: Request, context: RouteContext) {
   const payload = parsed.data;
   const phone = normalizePhone(payload.phone);
   if (!isValidNormalizedPhone(phone)) return error("Telefone inválido. Informe DDI, DDD e número.", 422);
+  const [canonicalPhone, legacyPhone = canonicalPhone] = phoneLookupCandidates(phone);
   const leadTags = [...new Set([...endpointTags, ...(payload.tags ?? [])])].slice(0, 30);
 
   try {
@@ -144,9 +145,9 @@ export async function POST(request: Request, context: RouteContext) {
       }
 
       const [contacts] = await connection.execute<DbRow[]>(
-        `SELECT id, tags FROM contacts WHERE tenant_id = ? AND (phone = ? OR (? IS NOT NULL AND external_id = ?))
-         ORDER BY CASE WHEN phone = ? THEN 0 ELSE 1 END LIMIT 1 FOR UPDATE`,
-        [Number(endpoint.tenant_id), phone, payload.external_id ?? null, payload.external_id ?? null, phone],
+        `SELECT id, tags FROM contacts WHERE tenant_id = ? AND (phone IN (?, ?) OR (? IS NOT NULL AND external_id = ?))
+         ORDER BY CASE WHEN phone = ? THEN 0 WHEN phone = ? THEN 1 ELSE 2 END LIMIT 1 FOR UPDATE`,
+        [Number(endpoint.tenant_id), canonicalPhone, legacyPhone, payload.external_id ?? null, payload.external_id ?? null, canonicalPhone, legacyPhone],
       );
       let contactId: number;
       if (contacts[0]) {

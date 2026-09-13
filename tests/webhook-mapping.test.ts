@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { mapIncomingLead } from "../src/lib/leads/mapping";
 import { isAllowedSourceHost } from "../src/lib/webhooks/source-host";
-import { isValidNormalizedPhone, normalizePhone } from "../src/lib/leads/schema";
+import { isValidNormalizedPhone, normalizePhone, phoneLookupCandidates } from "../src/lib/leads/schema";
 
 test("mapeia campos aninhados e itens de array para o lead", () => {
   const payload = { lead: { full_name: "Ana", phones: [{ value: "+55 (31) 99999-0000" }], company: "360" } };
@@ -23,4 +23,5 @@ test("normaliza telefone brasileiro para DDI, DDD e número", () => {
   assert.equal(normalizePhone("0055 31 98021-3332"), "5531980213332");
   assert.equal(isValidNormalizedPhone("5531980213332"), true);
   assert.equal(isValidNormalizedPhone("980213332"), false);
+  assert.deepEqual(phoneLookupCandidates("5531980213332"), ["5531980213332", "31980213332"]);
 });

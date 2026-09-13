@@ -27,3 +27,14 @@ export function isValidNormalizedPhone(phone: string): boolean {
   if (phone.startsWith("55")) return /^55[1-9]\d\d{8,9}$/.test(phone);
   return true;
 }
+
+/**
+ * Includes the historical Brazilian representation without DDI so webhook
+ * deliveries can repair old records instead of creating a duplicate.
+ */
+export function phoneLookupCandidates(normalizedPhone: string): string[] {
+  if (/^55[1-9]\d\d{8,9}$/.test(normalizedPhone)) {
+    return [normalizedPhone, normalizedPhone.slice(2)];
+  }
+  return [normalizedPhone];
+}
