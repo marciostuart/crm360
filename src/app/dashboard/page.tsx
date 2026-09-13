@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="section-heading"><h2>Desempenho pessoal</h2><button type="button" className="period-select">Este mês <span className="material-symbols-rounded">expand_more</span></button></div>
         <div className="personal-grid">
           <article className="performance-panel"><h3>Atividade do chat</h3><div className="activity-stats"><div><span className="material-symbols-rounded">person</span><strong>0</strong><small>Atribuições</small></div><div><span className="material-symbols-rounded">reply</span><strong>0</strong><small>Primeiras respostas</small></div><div><span className="material-symbols-rounded">archive</span><strong>0</strong><small>Chats fechados</small></div></div></article>
-          <article className="performance-panel"><h3>Métricas de tempo <b>Mediana</b><em>Média</em></h3><div className="time-stats"><div><strong>—</strong><small>Até a primeira resposta</small></div><div><strong>—</strong><small>Até o fechamento</small></div></div></article>
+          <article className="performance-panel"><h3>Métricas de tempo <span className="metric-toggle"><b>Mediana</b><em>Média</em></span></h3><div className="time-stats"><div><strong>—</strong><small>Até a primeira resposta</small></div><div><strong>—</strong><small>Até o fechamento</small></div></div></article>
         </div>
       </section>
 
