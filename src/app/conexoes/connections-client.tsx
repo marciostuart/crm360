@@ -27,20 +27,6 @@ export default function ConnectionsClient({ canManage }: { canManage: boolean })
   async function load() { const res = await fetch("/api/integrations/evolution/connections", { cache: "no-store" }); const data = await res.json(); if (res.ok) setItems(data.connections); }
   async function updateStatus(id: string, quiet = false) { const res = await fetch(`/api/integrations/evolution/connections/${id}/status`, { cache: "no-store" }); const data = await res.json(); if (res.ok) { setItems((current) => current.map((item) => item.public_id === id ? { ...item, status: data.status } : item)); if (data.status === "open" && qr?.id === id) setQr(null); if (!quiet) setMessage(`Status: ${statusLabel(data.status)}`); return data.status; } return null; }
   useEffect(() => { void load(); }, []);
-  useEffect(() => {
-    if (!qr) return;
-    const source = new EventSource(`/api/integrations/evolution/connections/${qr.id}/events`);
-    source.addEventListener("evolution", (event) => {
-      const data = JSON.parse((event as MessageEvent).data) as { state?: string; qrcode?: string };
-      if (data.qrcode && data.qrcode !== qr.value) setQr({ id: qr.id, value: data.qrcode });
-      if (data.state) {
-        setItems((current) => current.map((item) => item.public_id === qr.id ? { ...item, status: data.state! } : item));
-        if (data.state === "open") { setQr(null); setMessage("WhatsApp conectado."); }
-      }
-    });
-    source.onerror = () => source.close();
-    return () => source.close();
-  }, [qr]);
   useEffect(() => { if (!qr) return; const timer = window.setInterval(async () => { if (refreshInFlight.current) return; refreshInFlight.current = true; try { const currentStatus = await updateStatus(qr.id, true); if (currentStatus !== "open") { const res = await fetch(`/api/integrations/evolution/connections/${qr.id}/connect`, { method: "POST" }); const data = await res.json(); if (res.ok && data.qrcode) setQr({ id: qr.id, value: data.qrcode }); } } finally { refreshInFlight.current = false; } }, 20_000); return () => window.clearInterval(timer); }, [qr]);
   async function create(event: React.FormEvent) { event.preventDefault(); if (creating) return; setCreating(true); setMessage(""); try { const res = await fetch("/api/integrations/evolution/connections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) }); const data = await res.json(); if (!res.ok) { setMessage(data.error ?? "Não foi possível criar."); return; } setName(""); setMessage("Conexão criada. Use Conectar para gerar o QR Code."); await load(); } finally { setCreating(false); } }
   async function toggleConnection(item: Connection) { setMessage(""); const res = await fetch(`/api/integrations/evolution/connections/${item.public_id}/connect`, { method: "POST" }); const data = await res.json(); if (!res.ok) { setMessage(data.error ?? "Falha ao alterar a conexão."); return; } if (data.action === "disconnected") { setQr(null); setMessage("WhatsApp desconectado."); } else { setQr(data.qrcode ? { id: item.public_id, value: data.qrcode } : null); setMessage(data.pairing_code ? `Código de pareamento: ${data.pairing_code}` : "QR Code gerado. Ele será atualizado automaticamente se expirar."); } await load(); }

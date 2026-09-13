@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, type DbRow } from "@/lib/db";
 import { requireSession, isManager } from "@/lib/auth/require-session";
-import { connectInstance, configureWebsocket, logoutInstance } from "@/lib/evolution/client";
+import { connectInstance, logoutInstance } from "@/lib/evolution/client";
 import { apiError } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
 
@@ -18,7 +18,6 @@ export async function POST(request: Request, context: Context) {
     if (!isManager(session)) return apiError("Sem permissão.", 403);
     const [rows] = await db().execute<DbRow[]>("SELECT id, instance_name, status FROM evolution_connections WHERE public_id = ? AND tenant_id = ?", [publicId, session.tenantId]);
     if (!rows[0]) return apiError("Conexão não encontrada.", 404);
-    try { await configureWebsocket(String(rows[0].instance_name)); } catch { /* webhook/polling permanecem como fallback */ }
     if (String(rows[0].status).toLowerCase() === "open") {
       await logoutInstance(String(rows[0].instance_name));
       await db().execute("UPDATE evolution_connections SET status = 'disconnected' WHERE id = ? AND tenant_id = ?", [Number(rows[0].id), session.tenantId]);

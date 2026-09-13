@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { db, type DbRow } from "@/lib/db";
 import { requireSession, isManager } from "@/lib/auth/require-session";
 import { connectionSchema } from "@/lib/evolution/schema";
-import { createInstance, configureWebhook, configureWebsocket, deleteInstance } from "@/lib/evolution/client";
+import { createInstance, configureWebhook, deleteInstance } from "@/lib/evolution/client";
 import { encryptSecret } from "@/lib/crypto";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
@@ -54,7 +54,6 @@ export async function POST(request: Request) {
 
     try {
       await configureWebhook(instanceName, `${serverEnv().APP_URL.replace(/\/$/, "")}/api/webhooks/evolution/${publicId}`, webhookSecret);
-      try { await configureWebsocket(instanceName); } catch { /* fallback seguro: webhook e polling continuam ativos */ }
       await db().execute("UPDATE evolution_connections SET status = 'disconnected' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
       await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "evolution.created", entityType: "connection", entityId: publicId, metadata: { name: parsed.data.name }, request });
       return NextResponse.json({ ok: true, public_id: publicId, status: "disconnected" }, { status: 201 });

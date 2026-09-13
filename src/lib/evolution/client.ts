@@ -51,10 +51,3 @@ export function sendText(instanceName: string, number: string, text: string) {
 export function configureWebhook(instanceName: string, url: string, webhookSecret: string) {
   return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ enabled: true, url, webhook_by_events: false, base64: false, headers: { "X-M7-Evolution-Token": webhookSecret }, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] }) });
 }
-
-export function configureWebsocket(instanceName: string) {
-  return request(`/websocket/set/${encodeURIComponent(instanceName)}`, {
-    method: "POST",
-    body: JSON.stringify({ enabled: true, events: ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "MESSAGES_UPDATE"] }),
-  });
-}
