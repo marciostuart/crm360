@@ -695,6 +695,19 @@ body { background: radial-gradient(circle at 100% 0, rgba(99,102,241,.035), tran
 .app-shell .settings-section, .app-shell .endpoint-mapping-card, .app-shell .settings-grid > *, .app-shell .mapping-config-grid > *, .app-shell .mapping-fields > * { min-width: 0; }
 .app-shell .sample-items { gap: 20px; }
 
+/* Match the persisted sidebar before React hydrates, avoiding a layout flash. */
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .sidebar { width: 72px; overflow: visible; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .main { width: calc(100% - 72px); margin-left: 72px; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .sidebar-header { justify-content: flex-start; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .sidebar-logo-link { width: 40px; height: 48px; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .sidebar-logo-img { max-width: 40px; max-height: 40px; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .menu-item { width: 52px; margin-right: 10px; margin-left: 10px; justify-content: center; padding: 10px 0; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .menu-icon { margin: 0; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .menu-text,
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .nav-label { display: none; width: 0; flex: 0 0 0; margin: 0; opacity: 0; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .version-text { width: 0; height: 0; padding: 0; overflow: hidden; opacity: 0; }
+html.sidebar-preference-collapsed .app-shell.sidebar-expanded .theme-switch { display: none !important; }
+
 /* Icon containers never inherit text baseline, padding or asymmetric alignment. */
 .hero-card-icon.material-symbols-rounded, .settings-heading-icon.material-symbols-rounded, .crm-confirm-icon.material-symbols-rounded, .master-brand-icon.material-symbols-rounded, .master-mark.material-symbols-rounded, .menu-icon.material-symbols-rounded, .icon-button .material-symbols-rounded, .topbar-icon-button .material-symbols-rounded, .sidebar-collapse-control .material-symbols-rounded, .activity-stats .material-symbols-rounded { display: grid !important; place-items: center; align-content: center; justify-content: center; padding: 0 !important; margin: 0 !important; line-height: 1 !important; text-align: center; }
 .icon-button .material-symbols-rounded, .topbar-icon-button .material-symbols-rounded, .sidebar-collapse-control .material-symbols-rounded { width: 100%; height: 100%; }

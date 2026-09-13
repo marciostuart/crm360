@@ -17,6 +17,7 @@ export default function AppShell({ session, children }: { session: CurrentSessio
     const saved = window.localStorage.getItem("crm360-dark-mode") === "true";
     setDarkMode(saved);
     setSidebarOpen(window.localStorage.getItem("crm360-sidebar-open") !== "false");
+    document.documentElement.classList.remove("sidebar-preference-collapsed");
     setOperatorStatus(window.localStorage.getItem("crm360-operator-status") === "away" ? "away" : "available");
     document.documentElement.classList.toggle("dark-mode", saved);
   }, []);
