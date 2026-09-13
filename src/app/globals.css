@@ -716,9 +716,9 @@ html.sidebar-preference-collapsed .app-shell.sidebar-expanded .theme-switch { di
 }
 .app-shell.sidebar-collapsed .sidebar-collapse-control,
 .app-shell.sidebar-collapsed .sidebar:hover .sidebar-collapse-control {
-  top: 80px;
-  right: -22px;
-  left: auto;
+  top: 96px;
+  right: auto;
+  left: 56px;
 }
 
 /* Icon containers never inherit text baseline, padding or asymmetric alignment. */
