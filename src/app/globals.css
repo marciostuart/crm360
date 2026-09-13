@@ -708,6 +708,19 @@ html.sidebar-preference-collapsed .app-shell.sidebar-expanded .nav-label { displ
 html.sidebar-preference-collapsed .app-shell.sidebar-expanded .version-text { width: 0; height: 0; padding: 0; overflow: hidden; opacity: 0; }
 html.sidebar-preference-collapsed .app-shell.sidebar-expanded .theme-switch { display: none !important; }
 
+/* The toggle sits in the gutter between the navigation and the workspace. */
+.app-shell .sidebar-header { min-height: 128px; }
+.app-shell.sidebar-expanded .sidebar-collapse-control {
+  top: 80px;
+  right: -16px;
+}
+.app-shell.sidebar-collapsed .sidebar-collapse-control,
+.app-shell.sidebar-collapsed .sidebar:hover .sidebar-collapse-control {
+  top: 80px;
+  right: -22px;
+  left: auto;
+}
+
 /* Icon containers never inherit text baseline, padding or asymmetric alignment. */
 .hero-card-icon.material-symbols-rounded, .settings-heading-icon.material-symbols-rounded, .crm-confirm-icon.material-symbols-rounded, .master-brand-icon.material-symbols-rounded, .master-mark.material-symbols-rounded, .menu-icon.material-symbols-rounded, .icon-button .material-symbols-rounded, .topbar-icon-button .material-symbols-rounded, .sidebar-collapse-control .material-symbols-rounded, .activity-stats .material-symbols-rounded { display: grid !important; place-items: center; align-content: center; justify-content: center; padding: 0 !important; margin: 0 !important; line-height: 1 !important; text-align: center; }
 .icon-button .material-symbols-rounded, .topbar-icon-button .material-symbols-rounded, .sidebar-collapse-control .material-symbols-rounded { width: 100%; height: 100%; }
