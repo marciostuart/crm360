@@ -5,6 +5,7 @@ import { contactInputSchema } from "@/lib/contacts/schema";
 import { normalizePhone } from "@/lib/leads/schema";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,6 +41,8 @@ export async function POST(request: Request) {
     const input = parsed.data;
     const phone = normalizePhone(input.phone);
     if (phone.length < 8 || phone.length > 20) return apiError("Telefone inválido.", 422);
+    const capacity = await checkTenantLimit(session.tenantId, "max_contacts");
+    if (!capacity.allowed) return apiError(`Limite do plano atingido: máximo de ${capacity.limit} contatos.`, 409);
     const [result] = await db().execute<any>(
       `INSERT INTO contacts (tenant_id, external_id, name, phone, email, source, notes, custom_fields)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

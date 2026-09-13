@@ -4,6 +4,7 @@ import { requireSession, isManager } from "@/lib/auth/require-session";
 import { boardSchema } from "@/lib/crm/schema";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
   try {
     const session = await requireSession();
     if (!isManager(session)) return apiError("Sem permissão.", 403);
+    const capacity = await checkTenantLimit(session.tenantId, "max_boards");
+    if (!capacity.allowed) return apiError(`Limite do plano atingido: máximo de ${capacity.limit} quadros.`, 409);
     const parsed = boardSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Dados do quadro inválidos.", 422);
     const [result] = await db().execute<any>("INSERT INTO boards (tenant_id, name, description, color) VALUES (?, ?, ?, ?)", [session.tenantId, parsed.data.name, parsed.data.description ?? null, parsed.data.color ?? "#344a99"]);

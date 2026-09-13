@@ -21,6 +21,7 @@ export default function AppShell({ session, children }: { session: CurrentSessio
     document.documentElement.classList.toggle("dark-mode", next);
   }
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); router.push("/login"); router.refresh(); }
+  async function returnToMaster() { await fetch("/api/master/return", { method: "POST" }); window.location.href = "/master"; }
   const navItems: Array<{ href: string; icon: string; label: string; disabled?: boolean }> = [
     { href: "/dashboard", icon: "analytics", label: "Dashboard" },
     { href: "/conversas", icon: "chat", label: "Chat" },
@@ -46,6 +47,6 @@ export default function AppShell({ session, children }: { session: CurrentSessio
         <button className="menu-item logout-item" onClick={logout} type="button"><span className="menu-icon material-symbols-rounded">logout</span><span className="menu-text">Sair</span></button>
       </div>
     </aside>
-    <main className="main">{children}</main>
+    <main className="main">{session.isImpersonating && <div className="impersonation-bar"><span className="material-symbols-rounded">support_agent</span><span>Modo suporte ativo em <strong>{session.tenantName}</strong></span><button type="button" onClick={returnToMaster}>Voltar ao Master</button></div>}{children}</main>
   </div>;
 }

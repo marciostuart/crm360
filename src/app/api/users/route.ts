@@ -5,6 +5,7 @@ import { db, type DbRow } from "@/lib/db";
 import { isAdmin, requireSession } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { apiError, jsonBody } from "@/lib/request";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
     if (!isAdmin(session)) return apiError("Sem permissão.", 403);
     const parsed = userSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Dados do usuário inválidos. Use uma senha com pelo menos 12 caracteres.", 422);
+    const capacity = await checkTenantLimit(session.tenantId, "max_users");
+    if (!capacity.allowed) return apiError(`Limite do plano atingido: máximo de ${capacity.limit} usuários.`, 409);
     const passwordHash = await hash(parsed.data.password, 12);
     const [result] = await db().execute<any>(
       "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)",

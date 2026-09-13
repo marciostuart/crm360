@@ -8,6 +8,7 @@ import { encryptSecret } from "@/lib/crypto";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
 import { serverEnv } from "@/lib/env";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,6 +32,8 @@ export async function POST(request: Request) {
   try {
     const session = await requireSession();
     if (!isManager(session)) return apiError("Sem permissão.", 403);
+    const capacity = await checkTenantLimit(session.tenantId, "max_connections");
+    if (!capacity.allowed) return apiError(`Limite do plano atingido: máximo de ${capacity.limit} conexões WhatsApp.`, 409);
     const parsed = connectionSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Nome da conexão inválido.", 422);
 

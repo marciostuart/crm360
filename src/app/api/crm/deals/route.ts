@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/require-session";
 import { dealSchema } from "@/lib/crm/schema";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export async function POST(request: Request) {
     const session = await requireSession();
     const parsed = dealSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Dados do negócio inválidos.", 422);
+    const capacity = await checkTenantLimit(session.tenantId, "max_deals");
+    if (!capacity.allowed) return apiError(`Limite do plano atingido: máximo de ${capacity.limit} negócios.`, 409);
     const deal = parsed.data;
     const [valid] = await db().execute<DbRow[]>(
       `SELECT s.id FROM board_stages s JOIN boards b ON b.id = s.board_id

@@ -13,10 +13,20 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await getCurrentSession();
   if (!session || !isAdmin(session)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
-  const [rows] = await db().execute<DbRow[]>(
-    "SELECT endpoint_id, active, created_at, rotated_at FROM lead_webhook_endpoints WHERE tenant_id = ? ORDER BY created_at DESC",
-    [session.tenantId],
-  );
+  let rows: DbRow[];
+  try {
+    const [result] = await db().execute<DbRow[]>(
+      "SELECT endpoint_id, active, mode, field_mapping, tags, allowed_hosts, sample_updated_at, created_at, rotated_at FROM lead_webhook_endpoints WHERE tenant_id = ? ORDER BY created_at DESC",
+      [session.tenantId],
+    );
+    rows = result;
+  } catch {
+    const [result] = await db().execute<DbRow[]>(
+      "SELECT endpoint_id, active, created_at, rotated_at FROM lead_webhook_endpoints WHERE tenant_id = ? ORDER BY created_at DESC",
+      [session.tenantId],
+    );
+    rows = result.map((row) => ({ ...row, mode: "active", field_mapping: null, tags: [], allowed_hosts: [] }));
+  }
   return NextResponse.json({ endpoints: rows });
 }
 
@@ -25,16 +35,16 @@ export async function POST(request: Request) {
   const session = await getCurrentSession();
   if (!session || !isAdmin(session)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
   const endpointId = randomUUID();
-  const secret = randomBytes(32).toString("base64url");
+  // Kept encrypted for schema compatibility; new endpoints use the source-host policy.
+  const internalSecret = randomBytes(32).toString("base64url");
   await db().execute(
     "INSERT INTO lead_webhook_endpoints (tenant_id, endpoint_id, secret_ciphertext) VALUES (?, ?, ?)",
-    [session.tenantId, endpointId, encryptSecret(secret)],
+    [session.tenantId, endpointId, encryptSecret(internalSecret)],
   );
   return NextResponse.json({
     endpoint_id: endpointId,
-    secret,
     url: `${serverEnv().APP_URL.replace(/\/$/, "")}/api/v1/leads/${endpointId}`,
-    warning: "Exiba e armazene este segredo agora. Ele não será mostrado novamente.",
+    warning: "Configure ao menos um domínio de origem autorizado antes de enviar o primeiro payload.",
   }, { status: 201 });
 }
 
