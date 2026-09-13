@@ -93,9 +93,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <AppShell session={session}>
       <header className="page-header">
         <div className="page-header-info">
-          <div className="page-eyebrow"><span className="material-symbols-rounded">space_dashboard</span> Central de atendimento</div>
-          <h1>Visão Geral</h1>
-          <p>Acompanhe suas métricas e performance em tempo real</p>
+          <div className="page-eyebrow"><span className="material-symbols-rounded">space_dashboard</span> Painel de controle</div>
+          <h1>Bem-vindo, {session.userName.split(" ")[0]} <span aria-hidden="true">👋</span></h1>
+          <p>{session.tenantName} espaço de trabalho</p>
         </div>
         <div className="dashboard-header-tools">
           <div className="live-status"><span className="live-status-dot" /> Dados atualizados agora</div>
@@ -110,7 +110,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </header>
 
-      <section className="dashboard-hero-cards">
+      <section className="conversation-overview dashboard-section">
+        <div className="section-heading"><h2>Gerenciamento de chats <span className="material-symbols-rounded">info</span></h2><button type="button" className="period-select">Este mês <span className="material-symbols-rounded">expand_more</span></button></div>
+        <div className="conversation-balance">
+          <div className="balance-side incoming"><strong>Conversas {data.conversations}</strong><span>{data.conversations ? "100%" : "Sem atividade"}</span></div>
+          <div className="balance-divider" />
+          <div className="balance-side outgoing"><strong>Equipe respondeu {data.openConversations}</strong><span>{data.conversations ? "Acompanhe pelo chat" : "Sem atividade"}</span></div>
+        </div>
+      </section>
+
+      <section className="dashboard-section personal-section">
+        <div className="section-heading"><h2>Desempenho pessoal</h2><button type="button" className="period-select">Este mês <span className="material-symbols-rounded">expand_more</span></button></div>
+        <div className="personal-grid">
+          <article className="performance-panel"><h3>Atividade do chat</h3><div className="activity-stats"><div><span className="material-symbols-rounded">person</span><strong>0</strong><small>Atribuições</small></div><div><span className="material-symbols-rounded">reply</span><strong>0</strong><small>Primeiras respostas</small></div><div><span className="material-symbols-rounded">archive</span><strong>0</strong><small>Chats fechados</small></div></div></article>
+          <article className="performance-panel"><h3>Métricas de tempo <b>Mediana</b><em>Média</em></h3><div className="time-stats"><div><strong>—</strong><small>Até a primeira resposta</small></div><div><strong>—</strong><small>Até o fechamento</small></div></div></article>
+        </div>
+      </section>
+
+      <section className="dashboard-section"><div className="section-heading"><h2>Dados</h2><button type="button" className="period-select">Este mês <span className="material-symbols-rounded">expand_more</span></button></div><section className="dashboard-hero-cards">
         <article className="hero-card hero-card-blue">
           <div className="hero-card-top"><span className="hero-card-title">Conversas</span><span className="hero-card-icon icon-blue material-symbols-rounded">chat</span></div>
           <strong className="hero-card-value">{data.conversations}</strong>
@@ -131,7 +148,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <strong className="hero-card-value">{data.activeConnections}<small className="hero-card-total">/{data.totalConnections}</small></strong>
           <span className="hero-card-subtitle">Conexões ativas</span>
         </article>
-      </section>
+      </section></section>
 
       <section className="bento-grid">
         <article className="dash-card">
