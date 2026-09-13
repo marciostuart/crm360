@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       if (!turnstileToken) { setError("Confirme a verificação de segurança."); return; }
       const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, turnstileToken }) });
-      if (!response.ok) { setError("E-mail ou senha inválidos."); return; }
+      if (!response.ok) { const body = await response.json().catch(() => ({})); setError(body.error ?? "E-mail ou senha inválidos."); return; }
       router.push("/dashboard"); router.refresh();
     } catch { setError("Não foi possível conectar ao sistema."); }
     finally { setLoading(false); }
