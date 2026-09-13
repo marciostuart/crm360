@@ -49,5 +49,5 @@ export function sendText(instanceName: string, number: string, text: string) {
 }
 
 export function configureWebhook(instanceName: string, url: string, webhookSecret: string) {
-  return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ enabled: true, url, webhook_by_events: false, base64: false, headers: { "X-M7-Evolution-Token": webhookSecret }, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] }) });
+  return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ webhook: { enabled: true, url, byEvents: false, base64: false, headers: { "X-M7-Evolution-Token": webhookSecret }, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] } }) });
 }
