@@ -14,7 +14,6 @@ export async function centralRateLimit(request: Request, bucket: string, limit: 
     return { allowed: Number(row.request_count) <= limit, retryAfter: Math.max(1, Math.ceil((new Date(String(row.reset_at)).getTime() - Date.now()) / 1000)) };
   } catch (error) {
     // Keeps authentication protected while an older deployment is finishing the security migration.
-    if ((error as { code?: string }).code === "ER_NO_SUCH_TABLE") return rateLimit(request, bucket, limit, windowMs);
-    throw error;
+    return rateLimit(request, bucket, limit, windowMs);
   } finally { connection.release(); }
 }
