@@ -1,6 +1,6 @@
-# M7CRM Web App
+# CRM360 Web App
 
-Nova implementação segura do M7CRM em Next.js full-stack, isolada do PHP legado.
+Nova implementação segura do CRM360 em Next.js full-stack, isolada do PHP legado.
 
 ## Princípios de segurança
 

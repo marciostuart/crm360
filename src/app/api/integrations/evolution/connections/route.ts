@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const parsed = connectionSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Nome da conexão inválido.", 422);
 
-    const instanceName = `m7crm_${randomUUID().replaceAll("-", "").slice(0, 20)}`;
+    const instanceName = `crm360_${randomUUID().replaceAll("-", "").slice(0, 20)}`;
     const created = await createInstance(instanceName);
     const instanceToken = created.token ?? created.hash ?? created.instance?.token;
     if (!instanceToken) return apiError("A Evolution API não retornou o token da instância.", 502);

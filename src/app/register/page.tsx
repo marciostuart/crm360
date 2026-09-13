@@ -16,7 +16,7 @@ export default function RegisterPage() {
     } catch { setError("Não foi possível conectar ao sistema."); } finally { setLoading(false); }
   }
   return <main className="auth-page"><section className="auth-card">
-    <div className="brand">M7CRM</div><h1>Criar ambiente</h1><p className="muted">Seu primeiro usuário será o proprietário do tenant.</p>
+    <div className="brand">CRM360</div><h1>Criar ambiente</h1><p className="muted">Seu primeiro usuário será o proprietário do tenant.</p>
     <form onSubmit={submit}>
       <div className="field"><label htmlFor="company">Empresa</label><input id="company" name="company" required maxLength={160} /></div>
       <div className="field"><label htmlFor="name">Seu nome</label><input id="name" name="name" required maxLength={160} autoComplete="name" /></div>

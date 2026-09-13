@@ -7,7 +7,7 @@ export default function AppShell({ session, children }: { session: CurrentSessio
   const router = useRouter();
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); router.push("/login"); router.refresh(); }
   return <div className="app-shell">
-    <aside className="sidebar"><a className="sidebar-brand" href="/dashboard">M7CRM</a><nav>
+    <aside className="sidebar"><a className="sidebar-brand" href="/dashboard">CRM360</a><nav>
       <a className="nav-link" href="/dashboard"><span>▦</span><span className="nav-label">Dashboard</span></a>
       <a className="nav-link" href="/contatos"><span>◉</span><span className="nav-label">Contatos</span></a>
       <a className="nav-link" href="/crm"><span>◇</span><span className="nav-label">CRM</span></a>
@@ -15,6 +15,6 @@ export default function AppShell({ session, children }: { session: CurrentSessio
       <a className="nav-link" href="/conexoes"><span>◍</span><span className="nav-label">WhatsApp</span></a>
       {(session.role === "owner" || session.role === "admin") && <a className="nav-link" href="/integracoes/leads"><span>⌁</span><span className="nav-label">Webhooks</span></a>}
     </nav></aside>
-    <main className="main"><header className="topbar"><div><h1>M7CRM</h1><p className="muted">{session.tenantName}</p></div><div><span className="user-chip">{session.userName}</span> <button className="logout" onClick={logout}>Sair</button></div></header>{children}</main>
+    <main className="main"><header className="topbar"><div><h1>CRM360</h1><p className="muted">{session.tenantName}</p></div><div><span className="user-chip">{session.userName}</span> <button className="logout" onClick={logout}>Sair</button></div></header>{children}</main>
   </div>;
 }
