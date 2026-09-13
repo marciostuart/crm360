@@ -32,12 +32,12 @@ export default function AppShell({ session, children }: { session: CurrentSessio
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="sidebar-header"><a className="sidebar-logo-link" href="/dashboard"><img className="sidebar-logo-img" src="/logo.webp" alt="CRM360" /></a></div>
-      <nav className="sidebar-menu">
-        {navItems.map((item) => <a key={item.label} className={`nav-link menu-item ${pathname === item.href ? "active" : ""} ${item.disabled ? "disabled" : ""}`} href={item.href} aria-disabled={item.disabled || undefined} title={item.disabled ? `${item.label} indisponível nesta fase` : undefined} onClick={item.disabled ? (event) => event.preventDefault() : undefined}>
+      <nav className="sidebar-menu" aria-label="Navegação principal">
+        {navItems.map((item) => <a key={item.label} className={`nav-link menu-item ${pathname === item.href ? "active" : ""} ${item.disabled ? "disabled" : ""}`} href={item.href} aria-disabled={item.disabled || undefined} title={item.disabled ? `${item.label} indisponível nesta fase` : item.label} onClick={item.disabled ? (event) => event.preventDefault() : undefined}>
           <span className="menu-icon material-symbols-rounded">{item.icon}</span><span className="nav-label menu-text">{item.label}</span>
         </a>)}
         <div className="sidebar-nav-divider" />
-        {(session.role === "owner" || session.role === "admin") && <a className={`nav-link menu-item ${pathname === "/integracoes/leads" ? "active" : ""}`} href="/integracoes/leads"><span className="menu-icon material-symbols-rounded">admin_panel_settings</span><span className="nav-label menu-text">Super Admin</span></a>}
+        {(session.role === "owner" || session.role === "admin") && <a className={`nav-link menu-item ${pathname === "/integracoes/leads" ? "active" : ""}`} href="/integracoes/leads" title="Super Admin"><span className="menu-icon material-symbols-rounded">admin_panel_settings</span><span className="nav-label menu-text">Super Admin</span></a>}
       </nav>
       <div className="sidebar-footer">
         <div className="version-text">Versão atual: CRM360</div>
