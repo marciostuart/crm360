@@ -691,6 +691,9 @@ body { background: radial-gradient(circle at 100% 0, rgba(99,102,241,.035), tran
 
 /* Consistent layout rhythm: structural gaps never fall below 20px. */
 .app-shell .toolbar, .app-shell .form-grid, .app-shell .form-actions, .app-shell .dashboard-header-tools, .app-shell .settings-grid, .app-shell .settings-section-heading, .app-shell .branding-form, .app-shell .team-manager, .app-shell .team-form-grid, .app-shell .contacts-actions, .app-shell .contacts-layout, .app-shell .contacts-toolbar, .app-shell .mapping-config-grid, .app-shell .mapping-fields, .app-shell .custom-mapping, .app-shell .custom-mapping-heading, .app-shell .custom-mapping-row, .app-shell .endpoint-actions, .app-shell .endpoint-toolbar, .app-shell .personal-grid, .app-shell .activity-stats, .app-shell .time-stats { gap: 20px; }
+.app-shell .main { min-width: 0; overflow-x: hidden; }
+.app-shell .settings-section, .app-shell .endpoint-mapping-card, .app-shell .settings-grid > *, .app-shell .mapping-config-grid > *, .app-shell .mapping-fields > * { min-width: 0; }
+.app-shell .sample-items { gap: 20px; }
 
 /* Icon containers never inherit text baseline, padding or asymmetric alignment. */
 .hero-card-icon.material-symbols-rounded, .settings-heading-icon.material-symbols-rounded, .crm-confirm-icon.material-symbols-rounded, .master-brand-icon.material-symbols-rounded, .master-mark.material-symbols-rounded, .menu-icon.material-symbols-rounded, .icon-button .material-symbols-rounded, .topbar-icon-button .material-symbols-rounded, .sidebar-collapse-control .material-symbols-rounded, .activity-stats .material-symbols-rounded { display: grid !important; place-items: center; align-content: center; justify-content: center; padding: 0 !important; margin: 0 !important; line-height: 1 !important; text-align: center; }
