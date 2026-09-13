@@ -40,10 +40,21 @@ export function deleteInstance(instanceName: string) {
   return request(`/instance/delete/${encodeURIComponent(instanceName)}`, { method: "DELETE" });
 }
 
+export function logoutInstance(instanceName: string) {
+  return request(`/instance/logout/${encodeURIComponent(instanceName)}`, { method: "DELETE" });
+}
+
 export function sendText(instanceName: string, number: string, text: string) {
   return request(`/message/sendText/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ number, text }) });
 }
 
 export function configureWebhook(instanceName: string, url: string, webhookSecret: string) {
   return request(`/webhook/set/${encodeURIComponent(instanceName)}`, { method: "POST", body: JSON.stringify({ webhook: { enabled: true, url, byEvents: false, base64: false, headers: { "X-M7-Evolution-Token": webhookSecret }, events: ["MESSAGES_UPSERT", "MESSAGES_UPDATE", "CONNECTION_UPDATE"] } }) });
+}
+
+export function configureWebsocket(instanceName: string) {
+  return request(`/websocket/set/${encodeURIComponent(instanceName)}`, {
+    method: "POST",
+    body: JSON.stringify({ enabled: true, events: ["QRCODE_UPDATED", "CONNECTION_UPDATE", "MESSAGES_UPSERT", "MESSAGES_UPDATE"] }),
+  });
 }
