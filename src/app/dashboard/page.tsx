@@ -91,46 +91,50 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <AppShell session={session}>
       <header className="page-header">
         <div className="page-header-info">
+          <div className="page-eyebrow"><span className="material-symbols-rounded">space_dashboard</span> Central de atendimento</div>
           <h1>Visão Geral</h1>
           <p>Acompanhe suas métricas e performance em tempo real</p>
         </div>
-        <div className="dashboard-filters" aria-label="Período do dashboard">
-          {[7, 14, 30].map((period) => (
-            <a className={days === period ? "active" : ""} href={`/dashboard?dias=${period}`} key={period}>{period} dias</a>
-          ))}
-          <span className="filter-separator" />
-          <span className="date-range">{dateLabel(startDate)} - {dateLabel(endDate)}</span>
-          <a className="btn-refresh-header" href={`/dashboard?dias=${days}`} aria-label="Atualizar dashboard"><span className="material-symbols-rounded">refresh</span></a>
+        <div className="dashboard-header-tools">
+          <div className="live-status"><span className="live-status-dot" /> Dados atualizados agora</div>
+          <div className="dashboard-filters" aria-label="Período do dashboard">
+            {[7, 14, 30].map((period) => (
+              <a className={days === period ? "active" : ""} href={`/dashboard?dias=${period}`} key={period}>{period} dias</a>
+            ))}
+            <span className="filter-separator" />
+            <span className="date-range">{dateLabel(startDate)} - {dateLabel(endDate)}</span>
+            <a className="btn-refresh-header" href={`/dashboard?dias=${days}`} aria-label="Atualizar dashboard"><span className="material-symbols-rounded">refresh</span></a>
+          </div>
         </div>
       </header>
 
       <section className="dashboard-hero-cards">
-        <article className="hero-card">
+        <article className="hero-card hero-card-blue">
           <div className="hero-card-top"><span className="hero-card-title">Conversas</span><span className="hero-card-icon icon-blue material-symbols-rounded">chat</span></div>
           <strong className="hero-card-value">{data.conversations}</strong>
           <span className="hero-card-subtitle">{data.openConversations} abertas agora</span>
         </article>
-        <article className="hero-card">
-          <div className="hero-card-top"><span className="hero-card-title">Respondidas via IA</span><span className="hero-card-icon icon-purple material-symbols-rounded">smart_toy</span></div>
-          <strong className="hero-card-value">0</strong>
-          <span className="hero-card-subtitle">IA desativada nesta fase</span>
+        <article className="hero-card hero-card-purple">
+          <div className="hero-card-top"><span className="hero-card-title">Negócios no CRM</span><span className="hero-card-icon icon-purple material-symbols-rounded">view_kanban</span></div>
+          <strong className="hero-card-value">{data.deals}</strong>
+          <span className="hero-card-subtitle">Total no pipeline</span>
         </article>
-        <article className="hero-card">
+        <article className="hero-card hero-card-green">
           <div className="hero-card-top"><span className="hero-card-title">Contatos</span><span className="hero-card-icon icon-green material-symbols-rounded">contact_page</span></div>
           <strong className="hero-card-value">{data.contacts}</strong>
           <span className="hero-card-subtitle">+0 novos nos últimos {days}d</span>
         </article>
-        <article className="hero-card">
-          <div className="hero-card-top"><span className="hero-card-title">Créditos IA</span><span className="hero-card-icon icon-orange material-symbols-rounded">toll</span></div>
-          <strong className="hero-card-value">50,00</strong>
-          <span className="hero-card-subtitle">IA desativada nesta fase</span>
+        <article className="hero-card hero-card-orange">
+          <div className="hero-card-top"><span className="hero-card-title">WhatsApp conectado</span><span className="hero-card-icon icon-orange material-symbols-rounded">qr_code</span></div>
+          <strong className="hero-card-value">{data.activeConnections}<small className="hero-card-total">/{data.totalConnections}</small></strong>
+          <span className="hero-card-subtitle">Conexões ativas</span>
         </article>
       </section>
 
       <section className="bento-grid">
         <article className="dash-card">
           <div className="dash-card-header"><h2 className="dash-card-title"><span className="material-symbols-rounded">show_chart</span>Mensagens</h2><span className="dash-card-note">Enviadas vs Recebidas</span></div>
-          <div className="chart-container chart-placeholder"><div className="chart-y-axis"><span>1</span><span>0</span></div><div className="chart-area" /></div>
+          <div className="chart-container chart-placeholder"><div className="chart-y-axis"><span>1</span><span>0</span></div><div className="chart-area">{data.conversations === 0 && <span className="chart-empty-label">Sem mensagens no período</span>}</div></div>
           <div className="chart-legend"><span><i className="legend-dot legend-received" />Recebidas</span><span><i className="legend-dot legend-sent" />Enviadas</span></div>
         </article>
         <article className="dash-card pipeline-card">
@@ -142,7 +146,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <section className="bento-grid">
         <article className="dash-card">
           <div className="dash-card-header"><h2 className="dash-card-title"><span className="material-symbols-rounded">bar_chart</span>Conversas por Dia</h2></div>
-          <div className="chart-container chart-placeholder"><div className="chart-y-axis"><span>1</span><span>0</span></div><div className="chart-area" /></div>
+          <div className="chart-container chart-placeholder"><div className="chart-y-axis"><span>1</span><span>0</span></div><div className="chart-area">{data.conversations === 0 && <span className="chart-empty-label">Sem conversas no período</span>}</div></div>
         </article>
         <article className="dash-card team-card">
           <div className="dash-card-header"><h2 className="dash-card-title"><span className="material-symbols-rounded">group</span>Equipe</h2><span className="dash-card-note">Conexões: {data.activeConnections}/{data.totalConnections} ativas</span></div>

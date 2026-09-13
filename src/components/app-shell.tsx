@@ -20,13 +20,11 @@ export default function AppShell({ session, children }: { session: CurrentSessio
     document.documentElement.classList.toggle("dark-mode", next);
   }
   async function logout() { await fetch("/api/auth/logout", { method: "POST" }); router.push("/login"); router.refresh(); }
-  const navItems = [
+  const navItems: Array<{ href: string; icon: string; label: string; disabled?: boolean }> = [
     { href: "/dashboard", icon: "analytics", label: "Dashboard" },
     { href: "/conversas", icon: "chat", label: "Chat" },
-    { href: "#", icon: "network_intel_node", label: "Agentes IA", disabled: true },
     { href: "/crm", icon: "view_kanban", label: "CRM" },
     { href: "/conexoes", icon: "qr_code", label: "Conexões" },
-    { href: "#", icon: "send", label: "Disparos", disabled: true },
     { href: "/contatos", icon: "contacts", label: "Contatos" },
   ];
   return <div className="app-shell">
