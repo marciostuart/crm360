@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     try {
       await configureWebhook(instanceName, `${serverEnv().APP_URL.replace(/\/$/, "")}/api/webhooks/evolution/${publicId}`, webhookSecret);
-      await configureWebsocket(instanceName);
+      try { await configureWebsocket(instanceName); } catch { /* fallback seguro: webhook e polling continuam ativos */ }
       await db().execute("UPDATE evolution_connections SET status = 'disconnected' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
       await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "evolution.created", entityType: "connection", entityId: publicId, metadata: { name: parsed.data.name }, request });
       return NextResponse.json({ ok: true, public_id: publicId, status: "disconnected" }, { status: 201 });
