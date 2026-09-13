@@ -5,8 +5,9 @@ import { clientIp, rateLimit } from "./rate-limit";
 export async function centralRateLimit(request: Request, bucket: string, limit: number, windowMs: number) {
   const clientHash = createHash("sha256").update(clientIp(request)).digest("hex");
   const resetAt = new Date(Date.now() + windowMs);
-  const connection = await db().getConnection();
+  let connection: Awaited<ReturnType<ReturnType<typeof db>["getConnection"]>> | undefined;
   try {
+    connection = await db().getConnection();
     if (Math.random() < 0.01) await connection.execute("DELETE FROM request_rate_limits WHERE reset_at < DATE_SUB(NOW(3), INTERVAL 2 DAY)");
     await connection.execute(`INSERT INTO request_rate_limits (bucket, client_hash, request_count, reset_at) VALUES (?, ?, 1, ?) ON DUPLICATE KEY UPDATE request_count = IF(reset_at <= NOW(3), 1, request_count + 1), reset_at = IF(reset_at <= NOW(3), VALUES(reset_at), reset_at)`, [bucket, clientHash, resetAt]);
     const [rows] = await connection.execute<any[]>("SELECT request_count, reset_at FROM request_rate_limits WHERE bucket = ? AND client_hash = ?", [bucket, clientHash]);
@@ -15,5 +16,5 @@ export async function centralRateLimit(request: Request, bucket: string, limit: 
   } catch (error) {
     // Keeps authentication protected while an older deployment is finishing the security migration.
     return rateLimit(request, bucket, limit, windowMs);
-  } finally { connection.release(); }
+  } finally { connection?.release(); }
 }
