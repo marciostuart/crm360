@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       params.push(like, like, like);
     }
     const [rows] = await db().execute<DbRow[]>(
-      `SELECT id, external_id, name, phone, email, source, notes, custom_fields, created_at, updated_at
+      `SELECT id, external_id, name, phone, email, source, notes, custom_fields, tags, created_at, updated_at
          FROM contacts WHERE tenant_id = ?${filters}
         ORDER BY updated_at DESC, id DESC LIMIT ${limit} OFFSET ${offset}`,
       params,
