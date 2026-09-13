@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { db, type DbRow } from "@/lib/db";
 import { requireSession, isManager } from "@/lib/auth/require-session";
 import { connectionSchema } from "@/lib/evolution/schema";
-import { createInstance, configureWebhook, configureWebsocket } from "@/lib/evolution/client";
+import { createInstance, configureWebhook, configureWebsocket, deleteInstance } from "@/lib/evolution/client";
 import { encryptSecret } from "@/lib/crypto";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
@@ -59,8 +59,10 @@ export async function POST(request: Request) {
       await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "evolution.created", entityType: "connection", entityId: publicId, metadata: { name: parsed.data.name }, request });
       return NextResponse.json({ ok: true, public_id: publicId, status: "disconnected" }, { status: 201 });
     } catch {
-      await db().execute("UPDATE evolution_connections SET status = 'webhook_error' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
-      return apiError("Instância criada, mas o webhook seguro não pôde ser configurado.", 502);
+      await db().execute("UPDATE evolution_connections SET status = 'integration_error' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
+      try { await deleteInstance(instanceName); } catch { /* evita instancia orfa na Evolution */ }
+      await db().execute("DELETE FROM evolution_connections WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
+      return apiError("A Evolution recusou a configuração do webhook ou do WebSocket. Verifique WEBSOCKET_ENABLED na Evolution API.", 502);
     }
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return apiError("Não foi possível criar a conexão.", 409);
