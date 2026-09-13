@@ -6,6 +6,10 @@ export async function requireSession(): Promise<CurrentSession> {
   return session;
 }
 
+export function isAdmin(session: CurrentSession): boolean {
+  return ["owner", "admin"].includes(session.role);
+}
+
 export function isManager(session: CurrentSession): boolean {
-  return ["owner", "admin", "supervisor"].includes(session.role);
+  return isAdmin(session) || ["manager", "supervisor"].includes(session.role);
 }

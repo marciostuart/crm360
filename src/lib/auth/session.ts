@@ -13,6 +13,9 @@ export type CurrentSession = {
   userEmail: string;
   role: string;
   tenantName: string;
+  brandColor: string;
+  hasLogo: boolean;
+  brandingUpdatedAt: string;
 };
 
 export function sessionCookieOptions() {
@@ -46,7 +49,10 @@ export async function getCurrentSession(): Promise<CurrentSession | null> {
   if (!token) return null;
   const [rows] = await db().execute<DbRow[]>(
     `SELECT s.user_id, s.tenant_id, u.name AS user_name, u.email AS user_email,
-            u.role, t.name AS tenant_name
+            u.role, t.name AS tenant_name,
+            COALESCE(t.brand_color, '#344a99') AS brand_color,
+            (t.logo_data IS NOT NULL) AS has_logo,
+            COALESCE(DATE_FORMAT(t.logo_updated_at, '%Y%m%d%H%i%s'), 'default') AS branding_updated_at
        FROM sessions s
        JOIN users u ON u.id = s.user_id AND u.tenant_id = s.tenant_id
        JOIN tenants t ON t.id = s.tenant_id
@@ -65,5 +71,8 @@ export async function getCurrentSession(): Promise<CurrentSession | null> {
     userEmail: String(row.user_email),
     role: String(row.role),
     tenantName: String(row.tenant_name),
+    brandColor: String(row.brand_color),
+    hasLogo: Boolean(row.has_logo),
+    brandingUpdatedAt: String(row.branding_updated_at),
   };
 }

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       );
       const tenantId = Number(tenant.insertId);
       const [user] = await connection.execute<any>(
-        "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, 'owner')",
+        "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, 'admin')",
         [tenantId, name, email, passwordHash],
       );
       const [board] = await connection.execute<any>(

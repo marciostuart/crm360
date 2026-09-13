@@ -3,17 +3,16 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { db, type DbRow } from "@/lib/db";
 import { encryptSecret } from "@/lib/crypto";
 import { getCurrentSession } from "@/lib/auth/session";
+import { isAdmin } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { serverEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function allowed(role: string) { return role === "owner" || role === "admin"; }
-
 export async function GET() {
   const session = await getCurrentSession();
-  if (!session || !allowed(session.role)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
+  if (!session || !isAdmin(session)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
   const [rows] = await db().execute<DbRow[]>(
     "SELECT endpoint_id, active, created_at, rotated_at FROM lead_webhook_endpoints WHERE tenant_id = ? ORDER BY created_at DESC",
     [session.tenantId],
@@ -24,7 +23,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
   const session = await getCurrentSession();
-  if (!session || !allowed(session.role)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
+  if (!session || !isAdmin(session)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
   const endpointId = randomUUID();
   const secret = randomBytes(32).toString("base64url");
   await db().execute(
@@ -37,4 +36,19 @@ export async function POST(request: Request) {
     url: `${serverEnv().APP_URL.replace(/\/$/, "")}/api/v1/leads/${endpointId}`,
     warning: "Exiba e armazene este segredo agora. Ele não será mostrado novamente.",
   }, { status: 201 });
+}
+
+export async function DELETE(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
+  const session = await getCurrentSession();
+  if (!session || !isAdmin(session)) return NextResponse.json({ error: "Não autorizado." }, { status: 403 });
+  const body = await request.json().catch(() => null) as { endpoint_id?: unknown } | null;
+  const endpointId = typeof body?.endpoint_id === "string" ? body.endpoint_id : "";
+  if (!/^[0-9a-f-]{36}$/i.test(endpointId)) return NextResponse.json({ error: "Endpoint inválido." }, { status: 422 });
+  const [result] = await db().execute<any>(
+    "DELETE FROM lead_webhook_endpoints WHERE endpoint_id = ? AND tenant_id = ?",
+    [endpointId, session.tenantId],
+  );
+  if (!result.affectedRows) return NextResponse.json({ error: "Endpoint não encontrado." }, { status: 404 });
+  return NextResponse.json({ ok: true });
 }

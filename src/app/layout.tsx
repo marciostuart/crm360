@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "CRM360",
   description: "CRM multi-tenant com integração WhatsApp",
+  icons: { icon: "/logo.webp", shortcut: "/logo.webp", apple: "/logo.webp" },
   robots: { index: false, follow: false },
 };
 

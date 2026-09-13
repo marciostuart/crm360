@@ -1,0 +1,14 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Member = { id: number; name: string; email: string; role: "admin" | "manager" | "operator"; status: string; created_at: string };
+const roles = { admin: "Admin", manager: "Gerente", operator: "Operador" };
+
+export default function TeamClient() {
+  const [members, setMembers] = useState<Member[]>([]); const [form, setForm] = useState({ name: "", email: "", password: "", role: "operator" as Member["role"] }); const [message, setMessage] = useState(""); const [saving, setSaving] = useState(false);
+  async function load() { const response = await fetch("/api/users", { cache: "no-store" }); const data = await response.json(); if (response.ok) setMembers(data.users); }
+  useEffect(() => { void load(); }, []);
+  async function create(event: React.FormEvent) { event.preventDefault(); setMessage(""); setSaving(true); const response = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }); const data = await response.json(); setSaving(false); if (!response.ok) { setMessage(data.error ?? "Não foi possível cadastrar."); return; } setForm({ name: "", email: "", password: "", role: "operator" }); setMessage("Membro cadastrado com segurança."); await load(); }
+  return <div className="team-manager"><form className="team-form" onSubmit={create}><div className="team-form-grid"><input placeholder="Nome completo" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /><input placeholder="E-mail profissional" type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} /><input placeholder="Senha temporária (mín. 12 caracteres)" type="password" minLength={12} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /><select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as Member["role"] })}><option value="operator">Operador</option><option value="manager">Gerente</option><option value="admin">Admin</option></select></div><div className="form-actions"><button className="button" disabled={saving}>{saving ? "Cadastrando…" : "Cadastrar membro"}</button>{message && <span className="muted">{message}</span>}</div></form><div className="permission-note"><span className="material-symbols-rounded">shield</span><span><strong>Permissões</strong><br />Admin gerencia usuários e configurações. Gerente administra a operação. Operador atua no atendimento.</span></div><div className="team-list">{members.map((member) => <div className="team-member" key={member.id}><span className="member-avatar">{member.name.slice(0, 1).toUpperCase()}</span><div className="member-info"><strong>{member.name}</strong><span>{member.email}</span></div><span className={`role-badge role-${member.role}`}>{roles[member.role] ?? member.role}</span></div>)}</div></div>;
+}

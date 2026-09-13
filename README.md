@@ -31,7 +31,14 @@ O `.env` deve conter credenciais de um banco novo de desenvolvimento. Nunca copi
 - Start: `npm run start`
 - Diretório de saída: `.next` (gerenciado pelo Next.js)
 - Configure todas as variáveis do `.env.example` no painel da Hostinger.
-- Execute a migração contra o banco novo antes do primeiro uso.
+- Execute `npm run db:migrate` contra o banco antes do primeiro uso e sempre que uma nova migração for publicada.
+
+## Acesso e identidade
+
+- Admin: gerencia usuários, permissões, identidade visual, endpoints e toda a operação.
+- Gerente: administra a operação, CRM e conexões WhatsApp.
+- Operador: atua no atendimento e nos contatos do tenant.
+- Logos enviadas são validadas, redimensionadas e convertidas para WebP antes do armazenamento.
 
 ## Webhook de leads
 
