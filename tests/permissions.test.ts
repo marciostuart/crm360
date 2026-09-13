@@ -4,7 +4,7 @@ import { isAdmin, isManager } from "../src/lib/auth/require-session";
 import type { CurrentSession } from "../src/lib/auth/session";
 
 function session(role: string): CurrentSession {
-  return { userId: 1, tenantId: 1, userName: "Teste", userEmail: "teste@example.com", role, tenantName: "Tenant", brandColor: "#344a99", hasLogo: false, brandingUpdatedAt: "default" };
+  return { userId: 1, tenantId: 1, userName: "Teste", userEmail: "teste@example.com", role, tenantName: "Tenant", brandColor: "#344a99", hasLogo: false, brandingUpdatedAt: "default", isImpersonating: false, platformAdminId: null };
 }
 
 test("somente admin gerencia usuários, endpoints e identidade", () => {
