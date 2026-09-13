@@ -8,6 +8,7 @@ import { encryptSecret } from "@/lib/crypto";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
 import { serverEnv } from "@/lib/env";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
     try {
       await configureWebhook(instanceName, `${serverEnv().APP_URL.replace(/\/$/, "")}/api/webhooks/evolution/${publicId}`, webhookSecret);
       await db().execute("UPDATE evolution_connections SET status = 'disconnected' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);
+      await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "evolution.created", entityType: "connection", entityId: publicId, metadata: { name: parsed.data.name }, request });
       return NextResponse.json({ ok: true, public_id: publicId, status: "disconnected" }, { status: 201 });
     } catch {
       await db().execute("UPDATE evolution_connections SET status = 'webhook_error' WHERE id = ? AND tenant_id = ?", [Number(result.insertId), session.tenantId]);

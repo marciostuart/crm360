@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import ConfirmationModal from "@/components/confirmation-modal";
 
 type FieldKey = "external_id" | "name" | "phone" | "email" | "source" | "notes";
 type FieldMapping = Partial<Record<FieldKey, string | null>> & { custom_fields?: Record<string, string> };
@@ -54,6 +55,7 @@ export default function LeadEndpointsClient() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/integrations/leads/endpoints", { cache: "no-store" });
@@ -102,8 +104,7 @@ export default function LeadEndpointsClient() {
     await fetchDetail(data.endpoint_id, true);
   }
 
-  async function remove(endpointId: string) {
-    if (!window.confirm("Excluir este endpoint? Os eventos recebidos por ele também serão removidos.")) return;
+  async function removeConfirmed(endpointId: string) {
     setMessage("");
     const res = await fetch("/api/integrations/leads/endpoints", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint_id: endpointId }) });
     const data = await res.json().catch(() => null);
@@ -112,6 +113,7 @@ export default function LeadEndpointsClient() {
     if (selected === endpointId) { setSelected(null); setDetail(null); }
     await load();
   }
+  function remove(endpointId: string) { setDeleteTarget(endpointId); }
 
   async function configure(endpoint: Endpoint) {
     setMessage("");
@@ -181,5 +183,6 @@ export default function LeadEndpointsClient() {
         <div className="mapping-actions"><button className="button secondary" disabled={saving}>{saving ? "Salvando…" : "Salvar configuração"}</button>{detail.mode === "test" && <button type="button" className="button" disabled={saving} onClick={(event) => void saveConfiguration(event as unknown as FormEvent, "active")}>Ativar em produção</button>}{message && <span className="muted">{message}</span>}</div>
       </form>
     </section>}
+    <ConfirmationModal open={Boolean(deleteTarget)} title="Excluir endpoint?" description="Os eventos recebidos por este endpoint também serão removidos." confirmLabel="Excluir endpoint" danger onClose={() => setDeleteTarget(null)} onConfirm={async () => { if (deleteTarget) await removeConfirmed(deleteTarget); setDeleteTarget(null); }} />
   </>;
 }
