@@ -6,6 +6,7 @@ import { isValidNormalizedPhone, normalizePhone } from "@/lib/leads/schema";
 import { apiError, jsonBody } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
 import { checkTenantLimit } from "@/lib/billing/limits";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
       [session.tenantId, input.external_id ?? null, input.name, phone, input.email ?? null,
         input.source ?? null, input.notes ?? null, input.custom_fields ? JSON.stringify(input.custom_fields) : null],
     );
+    await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "contact.created", entityType: "contact", entityId: result.insertId, request });
     return NextResponse.json({ ok: true, id: Number(result.insertId) }, { status: 201 });
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return apiError("Já existe um contato com este telefone.", 409);

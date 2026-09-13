@@ -13,6 +13,8 @@ const envSchema = z.object({
   APP_ENCRYPTION_KEY: z.string().min(1),
   EVOLUTION_API_URL: z.string().url(),
   EVOLUTION_API_KEY: z.string().min(1),
+  TURNSTILE_SITE_KEY: z.string().min(1),
+  TURNSTILE_SECRET_KEY: z.string().min(1),
 });
 
 let cached: z.infer<typeof envSchema> | undefined;

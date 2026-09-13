@@ -6,6 +6,7 @@ import { isAdmin, requireSession } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { apiError, jsonBody } from "@/lib/request";
 import { checkTenantLimit } from "@/lib/billing/limits";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
       "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)",
       [session.tenantId, parsed.data.name, parsed.data.email, passwordHash, parsed.data.role],
     );
+    await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "user.created", entityType: "user", entityId: result.insertId, metadata: { role: parsed.data.role }, request });
     return NextResponse.json({ ok: true, id: Number(result.insertId) }, { status: 201 });
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return apiError("Este e-mail já está cadastrado.", 409);

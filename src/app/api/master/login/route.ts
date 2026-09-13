@@ -4,17 +4,22 @@ import { z } from "zod";
 import { db, type DbRow } from "@/lib/db";
 import { createMasterSession, MASTER_SESSION_COOKIE, masterSessionCookieOptions } from "@/lib/auth/master-session";
 import { isSameOrigin } from "@/lib/http";
+import { centralRateLimit } from "@/lib/security/central-rate-limit";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const schema = z.object({ email: z.string().trim().toLowerCase().email().max(254), password: z.string().min(1).max(128) });
+const schema = z.object({ email: z.string().trim().toLowerCase().email().max(254), password: z.string().min(1).max(128), turnstileToken: z.string().max(2048) });
 const genericError = () => NextResponse.json({ error: "E-mail ou senha inválidos." }, { status: 401 });
 
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
+  const limited = await centralRateLimit(request, "master-login", 10, 15 * 60_000);
+  if (!limited.allowed) return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos." }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return genericError();
+  if (!await verifyTurnstile(request, parsed.data.turnstileToken, "master-login")) return NextResponse.json({ error: "Verificação de segurança inválida." }, { status: 403 });
   try {
     const [rows] = await db().execute<DbRow[]>("SELECT id, password_hash, status, locked_until FROM platform_admins WHERE email = ? LIMIT 1", [parsed.data.email]);
     const admin = rows[0];

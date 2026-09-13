@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { isAdmin, requireSession } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { apiError } from "@/lib/request";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
     } else {
       await db().execute("UPDATE tenants SET brand_color = ? WHERE id = ?", [color.data, session.tenantId]);
     }
+    await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "branding.updated", entityType: "tenant", entityId: session.tenantId, metadata: { logo_changed: Boolean(logo || removeLogo), color: color.data }, request });
     return NextResponse.json({ ok: true });
   } catch (error) {
     const unauthorized = error instanceof Error && error.message === "UNAUTHORIZED";

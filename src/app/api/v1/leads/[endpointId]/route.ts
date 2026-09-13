@@ -4,8 +4,9 @@ import { decryptSecret } from "@/lib/crypto";
 import { isValidNormalizedPhone, leadPayloadSchema, normalizePhone, phoneLookupCandidates } from "@/lib/leads/schema";
 import { verifyLeadSignature } from "@/lib/webhooks/hmac";
 import { mapIncomingLead, parseLeadMapping } from "@/lib/leads/mapping";
-import { isAllowedSourceHost } from "@/lib/webhooks/source-host";
 import { checkTenantLimit } from "@/lib/billing/limits";
+import { centralRateLimit } from "@/lib/security/central-rate-limit";
+import { isAllowedSourceHost } from "@/lib/webhooks/source-host";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export async function POST(request: Request, context: RouteContext) {
   let legacySignatureMode = false;
   try {
     const [rows] = await db().execute<DbRow[]>(
-      `SELECT id, tenant_id, secret_ciphertext, field_mapping, mode, tags, allowed_hosts FROM lead_webhook_endpoints
+      `SELECT e.id, e.tenant_id, e.secret_ciphertext, e.field_mapping, e.mode, e.tags, e.allowed_hosts, t.webhook_payload_retention_days FROM lead_webhook_endpoints e JOIN tenants t ON t.id = e.tenant_id
         WHERE endpoint_id = ? AND active = TRUE LIMIT 1`,
       [endpointId],
     );
@@ -58,6 +59,13 @@ export async function POST(request: Request, context: RouteContext) {
   const rawBody = await request.text();
   if (Buffer.byteLength(rawBody, "utf8") > 64 * 1024) return error("Payload muito grande.", 413);
   const mode = String(endpoint.mode ?? "active") === "test" ? "test" : "active";
+  const retentionDays = Math.min(Math.max(Number(endpoint.webhook_payload_retention_days ?? 90) || 90, 7), 730);
+  const retentionCutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+  const limited = await centralRateLimit(request, `lead:${endpointId}`, 120, 60_000);
+  if (!limited.allowed) return error("Muitas requisições para este endpoint. Aguarde.", 429);
+  let mandatorySecret: string;
+  try { mandatorySecret = decryptSecret(String(endpoint.secret_ciphertext)); } catch { return error("Endpoint indisponível.", 503); }
+  if (!verifyLeadSignature(rawBody, { timestamp: request.headers.get("x-m7-timestamp"), nonce: request.headers.get("x-m7-nonce"), signature: request.headers.get("x-m7-signature") }, mandatorySecret)) return error("Assinatura HMAC inválida.", 401);
   const hasHostPolicy = stringArray(endpoint.allowed_hosts).length > 0;
 
   // New endpoints use a source-domain policy. Legacy endpoints keep HMAC only until migration/configuration.
@@ -114,6 +122,7 @@ export async function POST(request: Request, context: RouteContext) {
           "UPDATE lead_webhook_endpoints SET sample_payload = ?, sample_updated_at = NOW(3) WHERE id = ? AND tenant_id = ?",
           [JSON.stringify(jsonBody), Number(endpoint.id), Number(endpoint.tenant_id)],
         );
+        await connection.execute("DELETE FROM lead_webhook_events WHERE endpoint_id = ? AND created_at < ?", [Number(endpoint.id), retentionCutoff]);
         return { duplicate: false, replayConflict: false };
       });
       if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true, test: true });
@@ -181,6 +190,8 @@ export async function POST(request: Request, context: RouteContext) {
          VALUES (?, ?, ?, ?, ?, ?, 'accepted')`,
         [Number(endpoint.id), Number(endpoint.tenant_id), idempotencyKey, nonce, payload.external_id ?? null, JSON.stringify({ ...payload, phone })],
       );
+      await connection.execute("INSERT INTO tenant_audit_logs (tenant_id, user_id, action, entity_type, entity_id, metadata, ip_address) VALUES (?, NULL, 'lead.received', 'lead', ?, ?, NULL)", [Number(endpoint.tenant_id), contactId, JSON.stringify({ endpoint_id: endpointId })]);
+      await connection.execute("DELETE FROM lead_webhook_events WHERE endpoint_id = ? AND created_at < ?", [Number(endpoint.id), retentionCutoff]);
       return { duplicate: false, replayConflict: false, contactId };
     });
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });

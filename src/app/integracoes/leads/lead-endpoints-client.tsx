@@ -6,7 +6,7 @@ type FieldKey = "external_id" | "name" | "phone" | "email" | "source" | "notes";
 type FieldMapping = Partial<Record<FieldKey, string | null>> & { custom_fields?: Record<string, string> };
 type Endpoint = { endpoint_id: string; active: boolean; created_at: string; mode?: "test" | "active"; field_mapping?: FieldMapping | null; tags?: string[] | string | null; allowed_hosts?: string[] | string | null; sample_updated_at?: string | null };
 type Detail = { mode: "test" | "active"; field_mapping: FieldMapping | null; sample_payload: unknown; sample_updated_at: string | null; tags: string[]; allowed_hosts: string[] };
-type NewEndpoint = { endpoint_id: string; url: string; warning: string };
+type NewEndpoint = { endpoint_id: string; url: string; signing_secret: string; warning: string };
 type SampleItem = { path: string; value: unknown };
 type CustomRow = { target: string; path: string };
 
@@ -160,7 +160,7 @@ export default function LeadEndpointsClient() {
       <div><h3>Captura de leads por endpoint</h3><p className="muted">Todo endpoint inicia em TESTE. O primeiro payload autorizado vira uma amostra para você mapear, sem criar contato.</p></div>
       <button className="button" onClick={create}>Gerar endpoint</button>
       {message && !selected && <p className="error">{message}</p>}
-      {created && <div className="secret-result"><p><strong>URL de recebimento</strong></p><div className="secret-box">{created.url}</div><p className="muted">{created.warning}</p></div>}
+      {created && <div className="secret-result"><p><strong>URL de recebimento</strong></p><div className="secret-box">{created.url}</div><p><strong>Segredo de assinatura HMAC (exibido uma única vez)</strong></p><div className="secret-box">{created.signing_secret}</div><p className="muted">{created.warning} Todas as requisições devem enviar timestamp, nonce, idempotency-key e X-M7-Signature.</p></div>}
     </section>
 
     <section className="table-card endpoint-table-wrap">

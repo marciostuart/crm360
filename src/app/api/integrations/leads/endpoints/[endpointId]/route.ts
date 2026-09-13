@@ -5,6 +5,7 @@ import { isAdmin, requireSession } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { parseLeadMapping } from "@/lib/leads/mapping";
 import { normalizeAllowedHosts, parseStoredHosts } from "@/lib/webhooks/source-host";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,5 +74,6 @@ export async function PATCH(request: Request, context: Context) {
   const mapping = Object.keys(mappingData).length ? mappingData : null;
   if (mode === "active" && (!mapping?.name || !mapping?.phone)) return NextResponse.json({ error: "Mapeie Nome e Telefone antes de ativar o endpoint." }, { status: 422 });
   await db().execute("UPDATE lead_webhook_endpoints SET field_mapping = ?, mode = COALESCE(?, mode), tags = ?, allowed_hosts = ? WHERE id = ? AND tenant_id = ?", [mapping ? JSON.stringify(mapping) : null, mode ?? null, tags?.length ? JSON.stringify(tags) : null, JSON.stringify(allowedHosts), Number(rows[0].id), session.tenantId]);
+  await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "webhook.updated", entityType: "webhook", entityId: endpointId, metadata: { mode: mode ?? "unchanged", allowed_hosts_count: allowedHosts.length }, request });
   return NextResponse.json({ ok: true, mode: mode ?? "test", allowed_hosts: allowedHosts });
 }

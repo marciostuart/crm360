@@ -5,6 +5,7 @@ import { contactInputSchema } from "@/lib/contacts/schema";
 import { isValidNormalizedPhone, normalizePhone } from "@/lib/leads/schema";
 import { apiError, jsonBody, positiveId } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export async function PATCH(request: Request, context: Context) {
         input.custom_fields ? JSON.stringify(input.custom_fields) : null, id, session.tenantId],
     );
     if (!result.affectedRows) return apiError("Contato não encontrado.", 404);
+    await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "contact.updated", entityType: "contact", entityId: id, request });
     return NextResponse.json({ ok: true });
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return apiError("Já existe um contato com este telefone.", 409);
@@ -42,6 +44,7 @@ export async function DELETE(request: Request, context: Context) {
     const session = await requireSession();
     const [result] = await db().execute<any>("DELETE FROM contacts WHERE id = ? AND tenant_id = ?", [id, session.tenantId]);
     if (!result.affectedRows) return apiError("Contato não encontrado.", 404);
+    await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "contact.deleted", entityType: "contact", entityId: id, request });
     return NextResponse.json({ ok: true });
   } catch (error) {
     return apiError(error instanceof Error && error.message === "UNAUTHORIZED" ? "Não autorizado." : "Não foi possível excluir o contato.", error instanceof Error && error.message === "UNAUTHORIZED" ? 401 : 500);

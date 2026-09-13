@@ -6,6 +6,7 @@ import { getCurrentSession } from "@/lib/auth/session";
 import { isAdmin } from "@/lib/auth/require-session";
 import { isSameOrigin } from "@/lib/http";
 import { serverEnv } from "@/lib/env";
+import { writeTenantAudit } from "@/lib/security/tenant-audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,8 +42,10 @@ export async function POST(request: Request) {
     "INSERT INTO lead_webhook_endpoints (tenant_id, endpoint_id, secret_ciphertext) VALUES (?, ?, ?)",
     [session.tenantId, endpointId, encryptSecret(internalSecret)],
   );
+  await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "webhook.created", entityType: "webhook", entityId: endpointId, request });
   return NextResponse.json({
     endpoint_id: endpointId,
+    signing_secret: internalSecret,
     url: `${serverEnv().APP_URL.replace(/\/$/, "")}/api/v1/leads/${endpointId}`,
     warning: "Configure ao menos um domínio de origem autorizado antes de enviar o primeiro payload.",
   }, { status: 201 });
@@ -60,5 +63,6 @@ export async function DELETE(request: Request) {
     [endpointId, session.tenantId],
   );
   if (!result.affectedRows) return NextResponse.json({ error: "Endpoint não encontrado." }, { status: 404 });
+  await writeTenantAudit({ tenantId: session.tenantId, userId: session.userId, action: "webhook.deleted", entityType: "webhook", entityId: endpointId, request });
   return NextResponse.json({ ok: true });
 }

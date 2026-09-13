@@ -4,17 +4,25 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
+import { isSameOrigin } from "@/lib/http";
+import { centralRateLimit } from "@/lib/security/central-rate-limit";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const registrationSchema = z.object({
   company: z.string().trim().min(2).max(160),
   name: z.string().trim().min(2).max(160),
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(12).max(128),
+  turnstileToken: z.string().max(2048),
 });
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
+  const limited = await centralRateLimit(request, "register", 3, 60 * 60_000);
+  if (!limited.allowed) return NextResponse.json({ error: "Muitas tentativas. Aguarde antes de criar outro ambiente." }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
   const parsed = registrationSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Dados de cadastro inválidos." }, { status: 422 });
+  if (!await verifyTurnstile(request, parsed.data.turnstileToken, "register")) return NextResponse.json({ error: "Verificação de segurança inválida." }, { status: 403 });
 
   const { company, name, email, password } = parsed.data;
   const passwordHash = await hash(password, 12);

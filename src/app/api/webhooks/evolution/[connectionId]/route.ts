@@ -5,6 +5,7 @@ import { constantTimeEqual } from "@/lib/webhooks/hmac";
 import { normalizeEvolutionMessages } from "@/lib/evolution/message";
 import { apiError } from "@/lib/request";
 import { withTransaction } from "@/lib/db";
+import { centralRateLimit } from "@/lib/security/central-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,8 @@ export async function POST(request: Request, context: Context) {
   const connectionId = (await context.params).connectionId;
   if (!/^[0-9a-f-]{36}$/i.test(connectionId)) return apiError("Conexão inválida.", 404);
   const suppliedSecret = request.headers.get("x-m7-evolution-token") ?? "";
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > 256 * 1024) return apiError("Payload muito grande.", 413);
   if (!suppliedSecret || suppliedSecret.length > 200) return apiError("Não autorizado.", 401);
   const [connections] = await db().execute<DbRow[]>(
     "SELECT id, tenant_id, instance_name, webhook_secret_ciphertext FROM evolution_connections WHERE public_id = ? LIMIT 1",
@@ -25,7 +28,12 @@ export async function POST(request: Request, context: Context) {
     if (!constantTimeEqual(suppliedSecret, decryptSecret(String(connection.webhook_secret_ciphertext)))) return apiError("Não autorizado.", 401);
   } catch { return apiError("Não autorizado.", 401); }
 
-  const payload = await request.json().catch(() => null) as Record<string, any> | null;
+  const limited = await centralRateLimit(request, `evolution:${connectionId}`, 300, 60_000);
+  if (!limited.allowed) return apiError("Muitas requisições. Aguarde.", 429);
+  const rawBody = await request.text();
+  if (Buffer.byteLength(rawBody, "utf8") > 256 * 1024) return apiError("Payload muito grande.", 413);
+  let payload: Record<string, any> | null = null;
+  try { payload = JSON.parse(rawBody); } catch { return apiError("Payload invÃ¡lido.", 422); }
   if (!payload || typeof payload !== "object") return apiError("Payload inválido.", 422);
   const event = String(payload.event ?? payload.type ?? "").toLowerCase().replace(/[._-]/g, "");
   if (event.includes("connectionupdate")) {

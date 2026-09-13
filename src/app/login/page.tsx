@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Turnstile from "@/components/turnstile";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,11 +11,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setLoading(true);
     try {
-      const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+      if (!turnstileToken) { setError("Confirme a verificação de segurança."); return; }
+      const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password, turnstileToken }) });
       if (!response.ok) { setError("E-mail ou senha inválidos."); return; }
       router.push("/dashboard"); router.refresh();
     } catch { setError("Não foi possível conectar ao sistema."); }
@@ -26,6 +29,7 @@ export default function LoginPage() {
     <form onSubmit={submit}>
       <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
       <div className="field"><label htmlFor="password">Senha</label><input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+      <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""} action="login" onToken={setTurnstileToken} />
       {error && <div className="error" role="alert">{error}</div>}
       <button className="primary-button" disabled={loading}>{loading ? "Entrando..." : "Entrar"}</button>
     </form>

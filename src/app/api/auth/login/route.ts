@@ -3,15 +3,23 @@ import { compare } from "bcryptjs";
 import { z } from "zod";
 import { db, type DbRow } from "@/lib/db";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
+import { isSameOrigin } from "@/lib/http";
+import { centralRateLimit } from "@/lib/security/central-rate-limit";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(128),
+  turnstileToken: z.string().max(2048),
 });
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) return NextResponse.json({ error: "Origem não autorizada." }, { status: 403 });
+  const limited = await centralRateLimit(request, "login", 10, 15 * 60_000);
+  if (!limited.allowed) return NextResponse.json({ error: "Muitas tentativas. Aguarde alguns minutos." }, { status: 429, headers: { "Retry-After": String(limited.retryAfter) } });
   const parsed = loginSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "E-mail ou senha inválidos." }, { status: 401 });
+  if (!await verifyTurnstile(request, parsed.data.turnstileToken, "login")) return NextResponse.json({ error: "Verificação de segurança inválida." }, { status: 403 });
 
   const [rows] = await db().execute<DbRow[]>(
     `SELECT u.id, u.tenant_id, u.password_hash, u.status, u.locked_until,

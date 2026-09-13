@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Turnstile from "@/components/turnstile";
 
 export default function RegisterPage() {
-  const router = useRouter(); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const router = useRouter(); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [turnstileToken, setTurnstileToken] = useState("");
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setLoading(true);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(event.currentTarget); if (!turnstileToken) { setError("Confirme a verificação de segurança."); setLoading(false); return; }
     try {
-      const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(form)) });
+      const response = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...Object.fromEntries(form), turnstileToken }) });
       if (!response.ok) { const body = await response.json().catch(() => ({})); setError(body.error ?? "Não foi possível criar a conta."); return; }
       router.push("/dashboard"); router.refresh();
     } catch { setError("Não foi possível conectar ao sistema."); } finally { setLoading(false); }
@@ -22,6 +23,7 @@ export default function RegisterPage() {
       <div className="field"><label htmlFor="name">Seu nome</label><input id="name" name="name" required maxLength={160} autoComplete="name" /></div>
       <div className="field"><label htmlFor="email">E-mail</label><input id="email" name="email" type="email" required autoComplete="email" /></div>
       <div className="field"><label htmlFor="password">Senha (mínimo 12 caracteres)</label><input id="password" name="password" type="password" minLength={12} required autoComplete="new-password" /></div>
+      <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""} action="register" onToken={setTurnstileToken} />
       {error && <div className="error" role="alert">{error}</div>}
       <button className="primary-button" disabled={loading}>{loading ? "Criando..." : "Criar ambiente"}</button>
     </form>
