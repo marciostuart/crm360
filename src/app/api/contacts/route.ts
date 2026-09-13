@@ -24,7 +24,7 @@ export async function GET(request: Request) {
          FROM contacts WHERE tenant_id = ?
            AND (? = '' OR name LIKE ? OR phone LIKE ? OR email LIKE ?)
         ORDER BY updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
-      [session.tenantId, search, like, like, like, limit, offset],
+      [session.tenantId, search, like, like, like],
     );
     return NextResponse.json({ ok: true, contacts: rows });
   } catch (error) {
