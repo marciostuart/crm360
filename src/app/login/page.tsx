@@ -27,6 +27,7 @@ export default function LoginPage() {
   return <main className="auth-page"><section className="auth-card">
     <div className="brand">CRM360</div><h1>Entrar no CRM</h1><p className="muted">Acesse seu ambiente de atendimento.</p>
     <form onSubmit={submit}>
+      <div className="auth-footer"><Link href="/forgot-password">Esqueci minha senha</Link></div>
       <div className="field"><label htmlFor="email">E-mail</label><input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></div>
       <div className="field"><label htmlFor="password">Senha</label><input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} /></div>
       <Turnstile siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ""} action="login" onToken={setTurnstileToken} />

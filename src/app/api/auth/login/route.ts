@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   if (!await verifyTurnstile(request, parsed.data.turnstileToken, "login")) return NextResponse.json({ error: "Verificação de segurança inválida." }, { status: 403 });
 
   const [rows] = await db().execute<DbRow[]>(
-    `SELECT u.id, u.tenant_id, u.password_hash, u.status, u.locked_until,
+    `SELECT u.id, u.tenant_id, u.password_hash, u.status, u.locked_until, u.email_verified_at,
             t.status AS tenant_status
        FROM users u JOIN tenants t ON t.id = u.tenant_id
       WHERE u.email = ? LIMIT 1`,
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   const user = rows[0];
   const genericError = () => NextResponse.json({ error: "E-mail ou senha inválidos." }, { status: 401 });
   if (!user || user.status !== "active" || !["trial", "active"].includes(String(user.tenant_status))) return genericError();
+  if (!user.email_verified_at) return NextResponse.json({ error: "Confirme seu e-mail antes de entrar." }, { status: 403 });
   if (user.locked_until && new Date(String(user.locked_until)).getTime() > Date.now()) return genericError();
 
   const passwordOk = await compare(parsed.data.password, String(user.password_hash));

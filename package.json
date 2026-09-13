@@ -15,9 +15,11 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.1",
     "bcryptjs": "3.0.3",
     "mysql2": "3.24.4",
     "next": "16.3.5",
+    "nodemailer": "^10.0.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "sharp": "0.35.4",

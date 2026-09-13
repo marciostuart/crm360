@@ -15,6 +15,11 @@ const envSchema = z.object({
   EVOLUTION_API_KEY: z.string().min(1),
   TURNSTILE_SITE_KEY: z.string().min(1),
   TURNSTILE_SECRET_KEY: z.string().min(1),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: z.enum(["true", "false"]).default("true").transform((value) => value === "true"),
 });
 
 let cached: z.infer<typeof envSchema> | undefined;

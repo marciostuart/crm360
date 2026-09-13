@@ -3,10 +3,11 @@ import { hash } from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withTransaction } from "@/lib/db";
-import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
 import { isSameOrigin } from "@/lib/http";
 import { centralRateLimit } from "@/lib/security/central-rate-limit";
 import { verifyTurnstile } from "@/lib/security/turnstile";
+import { issueAccountToken } from "@/lib/auth/account-tokens";
+import { sendAccountEmail } from "@/lib/email";
 
 const registrationSchema = z.object({
   company: z.string().trim().min(2).max(160),
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
       );
       const tenantId = Number(tenant.insertId);
       const [user] = await connection.execute<any>(
-        "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, 'admin')",
+        "INSERT INTO users (tenant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, 'owner')",
         [tenantId, name, email, passwordHash],
       );
       const [board] = await connection.execute<any>(
@@ -50,11 +51,11 @@ export async function POST(request: Request) {
       );
       return { tenantId, userId: Number(user.insertId) };
     });
-    const token = await createSession(result.userId, result.tenantId);
-    const response = NextResponse.json({ ok: true }, { status: 201 });
-    response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
-    return response;
+    const token = await issueAccountToken(result.userId, "verify_email", 24);
+    await sendAccountEmail({ to: email, name, subject: "Confirme seu e-mail no CRM360", title: "Confirme seu e-mail", message: "Clique no botão abaixo para confirmar seu endereço e ativar o acesso ao CRM360.", actionLabel: "Confirmar e-mail", actionUrl: `${new URL(request.url).origin}/api/auth/verify-email/${token}` });
+    return NextResponse.json({ ok: true, requiresEmailVerification: true }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "SMTP_NOT_CONFIGURED") return NextResponse.json({ error: "O cadastro foi criado, mas o SMTP ainda não está configurado." }, { status: 503 });
     const code = (error as { code?: string }).code;
     if (code === "ER_DUP_ENTRY") return NextResponse.json({ error: "Não foi possível concluir o cadastro." }, { status: 409 });
     return NextResponse.json({ error: "Não foi possível concluir o cadastro." }, { status: 500 });
