@@ -6,7 +6,7 @@ type Contact = { id: number; name: string; phone: string; email?: string | null;
 export default function ContactsClient() {
   const [contacts, setContacts] = useState<Contact[]>([]); const [search, setSearch] = useState(""); const [message, setMessage] = useState("");
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
-  async function load() { const res = await fetch(`/api/contacts?search=${encodeURIComponent(search)}`, { cache: "no-store" }); const data = await res.json(); if (res.ok) setContacts(data.contacts); }
+  async function load() { const res = await fetch(`/api/contacts?search=${encodeURIComponent(search)}`, { cache: "no-store" }); const data = await res.json().catch(() => null); if (res.ok) { setContacts(data?.contacts ?? []); setMessage(""); } else setMessage(data?.error ?? "Não foi possível listar os contatos."); }
   useEffect(() => { void load(); }, [search]);
   async function create(event: React.FormEvent) { event.preventDefault(); setMessage(""); const res = await fetch("/api/contacts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, email: form.email || null }) }); const data = await res.json(); if (!res.ok) { setMessage(data.error ?? "Não foi possível criar."); return; } setForm({ name: "", phone: "", email: "" }); setMessage("Contato criado."); await load(); }
   async function remove(id: number) { if (!window.confirm("Excluir este contato e suas conversas?")) return; const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" }); if (res.ok) await load(); }

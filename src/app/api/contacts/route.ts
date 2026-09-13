@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       `SELECT id, external_id, name, phone, email, source, notes, custom_fields, created_at, updated_at
          FROM contacts WHERE tenant_id = ?
            AND (? = '' OR name LIKE ? OR phone LIKE ? OR email LIKE ?)
-        ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+        ORDER BY updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
       [session.tenantId, search, like, like, like, limit, offset],
     );
     return NextResponse.json({ ok: true, contacts: rows });

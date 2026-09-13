@@ -9,6 +9,7 @@ type DashboardData = {
   conversations: number;
   openConversations: number;
   contacts: number;
+  newContacts: number;
   deals: number;
   activeConnections: number;
   totalConnections: number;
@@ -18,14 +19,14 @@ type DashboardData = {
 
 const asNumber = (value: unknown) => Number(value ?? 0);
 
-async function loadDashboard(tenantId: number): Promise<DashboardData> {
+async function loadDashboard(tenantId: number, days: number): Promise<DashboardData> {
   try {
     const [conversationResult, contactsResult, dealsResult, connectionsResult, pipelineResult, teamResult] = await Promise.all([
       db().execute<DbRow[]>(
         "SELECT COUNT(*) AS total, COALESCE(SUM(status = 'open'), 0) AS open_total FROM conversations WHERE tenant_id = ?",
         [tenantId],
       ),
-      db().execute<DbRow[]>("SELECT COUNT(*) AS total FROM contacts WHERE tenant_id = ?", [tenantId]),
+      db().execute<DbRow[]>(`SELECT COUNT(*) AS total, SUM(created_at >= DATE_SUB(NOW(3), INTERVAL ${days} DAY)) AS new_total FROM contacts WHERE tenant_id = ?`, [tenantId]),
       db().execute<DbRow[]>("SELECT COUNT(*) AS total FROM deals WHERE tenant_id = ?", [tenantId]),
       db().execute<DbRow[]>(
         "SELECT COUNT(*) AS total, COALESCE(SUM(status IN ('connected', 'open')), 0) AS active_total FROM evolution_connections WHERE tenant_id = ?",
@@ -52,6 +53,7 @@ async function loadDashboard(tenantId: number): Promise<DashboardData> {
       conversations: asNumber(conversations?.total),
       openConversations: asNumber(conversations?.open_total),
       contacts: asNumber(contactsResult[0][0]?.total),
+      newContacts: asNumber(contactsResult[0][0]?.new_total),
       deals: asNumber(dealsResult[0][0]?.total),
       activeConnections: asNumber(connections?.active_total),
       totalConnections: asNumber(connections?.total),
@@ -63,7 +65,7 @@ async function loadDashboard(tenantId: number): Promise<DashboardData> {
       team: (teamResult[0] as DbRow[]).map((row) => ({ name: String(row.name), role: String(row.role) })),
     };
   } catch {
-    return { conversations: 0, openConversations: 0, contacts: 0, deals: 0, activeConnections: 0, totalConnections: 0, pipeline: [], team: [] };
+    return { conversations: 0, openConversations: 0, contacts: 0, newContacts: 0, deals: 0, activeConnections: 0, totalConnections: 0, pipeline: [], team: [] };
   }
 }
 
@@ -81,7 +83,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const params = await searchParams;
   const days = [7, 14, 30].includes(Number(params.dias)) ? Number(params.dias) : 7;
-  const data = await loadDashboard(session.tenantId);
+  const data = await loadDashboard(session.tenantId, days);
   const endDate = new Date();
   const startDate = new Date(endDate);
   startDate.setDate(endDate.getDate() - days);
@@ -122,7 +124,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <article className="hero-card hero-card-green">
           <div className="hero-card-top"><span className="hero-card-title">Contatos</span><span className="hero-card-icon icon-green material-symbols-rounded">contact_page</span></div>
           <strong className="hero-card-value">{data.contacts}</strong>
-          <span className="hero-card-subtitle">+0 novos nos últimos {days}d</span>
+          <span className="hero-card-subtitle">+{data.newContacts} novos nos últimos {days}d</span>
         </article>
         <article className="hero-card hero-card-orange">
           <div className="hero-card-top"><span className="hero-card-title">WhatsApp conectado</span><span className="hero-card-icon icon-orange material-symbols-rounded">qr_code</span></div>
