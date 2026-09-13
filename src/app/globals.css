@@ -784,6 +784,19 @@ html.sidebar-preference-collapsed .app-shell.sidebar-expanded .theme-switch { di
   display: none !important;
 }
 
+/* Final toggle coordinates: centered on the sidebar/content divider. */
+.app-shell.sidebar-expanded .sidebar-collapse-control {
+  top: 88px;
+  right: -19px;
+  left: auto;
+}
+.app-shell.sidebar-collapsed .sidebar-collapse-control,
+.app-shell.sidebar-collapsed .sidebar:hover .sidebar-collapse-control {
+  top: 96px;
+  right: auto;
+  left: 56px;
+}
+
 @media (max-width: 760px) {
   .app-shell.sidebar-expanded .sidebar,
   .app-shell.sidebar-collapsed .sidebar { width: 0; }
