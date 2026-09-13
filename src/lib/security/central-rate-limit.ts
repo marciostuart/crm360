@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
-import { clientIp } from "./rate-limit";
+import { clientIp, rateLimit } from "./rate-limit";
 
 export async function centralRateLimit(request: Request, bucket: string, limit: number, windowMs: number) {
   const clientHash = createHash("sha256").update(clientIp(request)).digest("hex");
@@ -12,5 +12,9 @@ export async function centralRateLimit(request: Request, bucket: string, limit: 
     const [rows] = await connection.execute<any[]>("SELECT request_count, reset_at FROM request_rate_limits WHERE bucket = ? AND client_hash = ?", [bucket, clientHash]);
     const row = rows[0];
     return { allowed: Number(row.request_count) <= limit, retryAfter: Math.max(1, Math.ceil((new Date(String(row.reset_at)).getTime() - Date.now()) / 1000)) };
+  } catch (error) {
+    // Keeps authentication protected while an older deployment is finishing the security migration.
+    if ((error as { code?: string }).code === "ER_NO_SUCH_TABLE") return rateLimit(request, bucket, limit, windowMs);
+    throw error;
   } finally { connection.release(); }
 }
