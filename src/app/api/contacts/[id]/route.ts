@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/auth/require-session";
 import { contactInputSchema } from "@/lib/contacts/schema";
-import { normalizePhone } from "@/lib/leads/schema";
+import { isValidNormalizedPhone, normalizePhone } from "@/lib/leads/schema";
 import { apiError, jsonBody, positiveId } from "@/lib/request";
 import { isSameOrigin } from "@/lib/http";
 
@@ -19,7 +19,7 @@ export async function PATCH(request: Request, context: Context) {
     const parsed = contactInputSchema.safeParse(await jsonBody(request));
     if (!parsed.success) return apiError("Dados do contato inválidos.", 422);
     const input = parsed.data; const phone = normalizePhone(input.phone);
-    if (phone.length < 8 || phone.length > 20) return apiError("Telefone inválido.", 422);
+    if (!isValidNormalizedPhone(phone)) return apiError("Telefone inválido. Informe DDI, DDD e número.", 422);
     const [result] = await db().execute<any>(
       `UPDATE contacts SET external_id = ?, name = ?, phone = ?, email = ?, source = ?, notes = ?, custom_fields = ?
         WHERE id = ? AND tenant_id = ?`,

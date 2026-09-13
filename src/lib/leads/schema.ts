@@ -13,6 +13,17 @@ export const leadPayloadSchema = z.object({
 
 export type LeadPayload = z.infer<typeof leadPayloadSchema>;
 
+/** Stores phones as digits-only DDI + DDD + subscriber number. */
 export function normalizePhone(phone: string): string {
-  return phone.replace(/\D/g, "");
+  let digits = phone.trim().replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  // Brazilian local numbers with a DDD receive the default country code.
+  if (/^[1-9]\d{9,10}$/.test(digits) && !digits.startsWith("55")) return `55${digits}`;
+  return digits;
+}
+
+export function isValidNormalizedPhone(phone: string): boolean {
+  if (!/^\d{10,15}$/.test(phone) || phone.startsWith("0")) return false;
+  if (phone.startsWith("55")) return /^55[1-9]\d\d{8,9}$/.test(phone);
+  return true;
 }

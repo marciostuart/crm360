@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { db, withTransaction, type DbRow } from "@/lib/db";
 import { decryptSecret } from "@/lib/crypto";
-import { leadPayloadSchema, normalizePhone } from "@/lib/leads/schema";
+import { isValidNormalizedPhone, leadPayloadSchema, normalizePhone } from "@/lib/leads/schema";
 import { verifyLeadSignature } from "@/lib/webhooks/hmac";
 import { mapIncomingLead, parseLeadMapping } from "@/lib/leads/mapping";
 import { isAllowedSourceHost } from "@/lib/webhooks/source-host";
+import { checkTenantLimit } from "@/lib/billing/limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -127,7 +128,7 @@ export async function POST(request: Request, context: RouteContext) {
   if (!parsed.success) return error("Payload de lead inválido. Confira o mapeamento de Nome e Telefone.", 422);
   const payload = parsed.data;
   const phone = normalizePhone(payload.phone);
-  if (phone.length < 8 || phone.length > 20) return error("Telefone inválido.", 422);
+  if (!isValidNormalizedPhone(phone)) return error("Telefone inválido. Informe DDI, DDD e número.", 422);
   const leadTags = [...new Set([...endpointTags, ...(payload.tags ?? [])])].slice(0, 30);
 
   try {
@@ -162,6 +163,8 @@ export async function POST(request: Request, context: RouteContext) {
             mergedTags.length ? JSON.stringify(mergedTags) : null, contactId, Number(endpoint.tenant_id)],
         );
       } else {
+        const capacity = await checkTenantLimit(Number(endpoint.tenant_id), "max_contacts");
+        if (!capacity.allowed) throw new Error("CONTACT_LIMIT_REACHED");
         const [inserted] = await connection.execute<any>(
           `INSERT INTO contacts (tenant_id, external_id, name, phone, email, source, notes, custom_fields, tags)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -182,7 +185,10 @@ export async function POST(request: Request, context: RouteContext) {
     if (result.duplicate) return NextResponse.json({ ok: true, duplicate: true });
     if (result.replayConflict) return error("Nonce já utilizado.", 409);
     return NextResponse.json({ ok: true, contact_id: result.contactId }, { status: 202 });
-  } catch {
+  } catch (processingError) {
+    if (processingError instanceof Error && processingError.message === "CONTACT_LIMIT_REACHED") {
+      return error("Limite de contatos do plano atingido.", 409);
+    }
     return error("Não foi possível processar o lead.", 500);
   }
 }
