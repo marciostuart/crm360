@@ -9,12 +9,14 @@ export default function AppShell({ session, children }: { session: CurrentSessio
   const router = useRouter();
   const pathname = usePathname();
   const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [operatorStatus, setOperatorStatus] = useState<"available" | "away">("available");
   const profileRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const saved = window.localStorage.getItem("crm360-dark-mode") === "true";
     setDarkMode(saved);
+    setSidebarOpen(window.localStorage.getItem("crm360-sidebar-open") !== "false");
     setOperatorStatus(window.localStorage.getItem("crm360-operator-status") === "away" ? "away" : "available");
     document.documentElement.classList.toggle("dark-mode", saved);
   }, []);
@@ -42,8 +44,10 @@ export default function AppShell({ session, children }: { session: CurrentSessio
   const logoSrc = session.hasLogo ? `/api/settings/logo?v=${encodeURIComponent(session.brandingUpdatedAt)}` : "/logo.webp";
   const initials = useMemo(() => session.userName.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase() || "U", [session.userName]);
   function changeStatus(status: "available" | "away") { setOperatorStatus(status); window.localStorage.setItem("crm360-operator-status", status); setProfileOpen(false); }
-  return <div className="app-shell" style={tenantStyles}>
+  function toggleSidebar() { const next = !sidebarOpen; setSidebarOpen(next); window.localStorage.setItem("crm360-sidebar-open", String(next)); }
+  return <div className={`app-shell ${sidebarOpen ? "sidebar-expanded" : "sidebar-collapsed"}`} style={tenantStyles}>
     <aside className="sidebar">
+      <button type="button" className="sidebar-collapse-control" onClick={toggleSidebar} aria-label={sidebarOpen ? "Recolher menu" : "Expandir menu"} title={sidebarOpen ? "Recolher menu" : "Expandir menu"}><span className="material-symbols-rounded">{sidebarOpen ? "left_panel_close" : "left_panel_open"}</span></button>
       <div className="sidebar-header"><a className="sidebar-logo-link" href="/dashboard"><img className="sidebar-logo-img" src={logoSrc} alt="CRM360" /></a></div>
       <nav className="sidebar-menu" aria-label="Navegação principal">
         {navItems.map((item) => <a key={item.label} className={`nav-link menu-item ${pathname === item.href ? "active" : ""} ${item.disabled ? "disabled" : ""}`} href={item.href} aria-disabled={item.disabled || undefined} title={item.disabled ? `${item.label} indisponível nesta fase` : item.label} onClick={item.disabled ? (event) => event.preventDefault() : undefined}>
