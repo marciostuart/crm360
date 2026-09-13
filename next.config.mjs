@@ -1,3 +1,8 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -8,6 +13,13 @@ const securityHeaders = [
 
 const nextConfig = {
   poweredByHeader: false,
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": path.join(projectRoot, "src"),
+    };
+    return config;
+  },
   async headers() {
     return [
       {
